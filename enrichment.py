@@ -84,7 +84,7 @@ class Enrichment:
                 'rank': i + 1,
                 'description': term['description'],
                 'overlap': sorted(list(self.gene_set.genes & set(term['genes']))),
-                'p_value': p_values[i],
+                'p-value': p_values[i],
                 'fdr': p_values_adjusted[i]
             })
         return results

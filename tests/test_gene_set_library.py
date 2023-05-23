@@ -3,7 +3,7 @@ from gene_set_library import GeneSetLibrary
 
 class TestGeneSetLibrary:
     def setup_method(self):
-        self.gmt_file_path = 'sample.gmt'
+        self.gmt_file_path = './tests/sample.gmt'
         self.library = GeneSetLibrary(self.gmt_file_path)
 
     def test_num_terms(self):
