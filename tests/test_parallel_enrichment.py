@@ -28,5 +28,5 @@ class TestEnrichment:
             assert isinstance(result['rank'], int)
             assert isinstance(result['description'], str)
             assert isinstance(result['overlap'], list)
-            assert isinstance(result['p_value'], float)
+            assert isinstance(result['p-value'], float)
             assert isinstance(result['fdr'], float)

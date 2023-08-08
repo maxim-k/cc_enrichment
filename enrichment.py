@@ -60,13 +60,15 @@ class Enrichment:
         p_values = []
         for term in self.gene_set_library.library:
             term_genes = set(term['genes'])
+            n_term_genes = len(term_genes)
             overlap = self.gene_set.genes & term_genes
+            n_overlap = len(overlap)
 
             # Build contingency table for Fisher's exact test
-            contingency_table = [[len(overlap),
-                                  len(term_genes) - len(overlap)],
-                                 [len(self.gene_set.genes) - len(overlap),
-                                  len(self.background_gene_set.genes) - len(term_genes) - len(self.gene_set.genes) + len(overlap)]]
+            contingency_table = [[n_overlap,
+                                  n_term_genes - n_overlap],
+                                 [self.gene_set.size - n_overlap,
+                                  self.background_gene_set.size - n_term_genes - self.gene_set.size + n_overlap]]
 
             # Perform Fisher's exact test
             _, p_value = fisher_exact(contingency_table)

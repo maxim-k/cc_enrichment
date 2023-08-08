@@ -34,13 +34,15 @@ def compute_pvalue(args: Tuple[GeneSet, BackgroundGeneSet, dict]) -> Tuple[str, 
     """
     gene_set, background_gene_set, term = args
     term_genes = set(term['genes'])
+    n_term_genes = len(term_genes)
     overlap = gene_set.genes & term_genes
+    n_overlap = len(overlap)
 
     # Build contingency table for Fisher's exact test
-    contingency_table = [[len(overlap),
-                         len(term_genes) - len(overlap)],
-                         [len(gene_set.genes) - len(overlap),
-                         len(background_gene_set.genes) - len(term_genes) - len(gene_set.genes) + len(overlap)]]
+    contingency_table = [[n_overlap,
+                          n_term_genes - n_overlap],
+                         [gene_set.size - n_overlap,
+                          background_gene_set.size - n_term_genes - gene_set.size + n_overlap]]
 
     # Perform Fisher's exact test
     _, p_value = fisher_exact(contingency_table)
@@ -116,7 +118,7 @@ class Enrichment:
                 'rank': i + 1,
                 'description': term_description,
                 'overlap': overlap_genes,
-                'p_value': p_values[i],
+                'p-value': p_values[i],
                 'fdr': p_values_adjusted[i]
             })
 
