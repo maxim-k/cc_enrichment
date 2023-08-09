@@ -95,6 +95,7 @@ class Enrichment:
         """Return the enrichment results as a pandas dataframe."""
         return pd.DataFrame({'rank': [result['rank'] for result in self.results],
                              'term': [result['term'] for result in self.results],
+                             'description': [result['description'] for result in self.results],
                              'overlap': [result['overlap'] for result in self.results],
                              'p-value': [result['p-value'] for result in self.results],
                              'fdr': [result['fdr'] for result in self.results]
