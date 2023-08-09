@@ -45,18 +45,24 @@ def render_barchart(result):
     bar.loc[:, "p-value"] = bar.loc[:, "p-value"].apply(lambda x: -1 * log10(x))
     bar = bar.sort_values(by=["p-value"])
     bar.columns = ["term", "-log10(p-value)"]
-    fig = px.bar(bar, x="-log10(p-value)", y="term", orientation="h", labels={
-        "-log10(p-value)": "−log₁₀(p‐value)",
-        "term": "Term"
-    })
+    fig = px.bar(
+        bar,
+        x="-log10(p-value)",
+        y="term",
+        orientation="h",
+        labels={"-log10(p-value)": "−log₁₀(p‐value)", "term": "Term"},
+    )
     st.plotly_chart(fig, use_container_width=True)
 
 
 def render_results(result):
     result = result.to_dataframe().head(10)
     result = result.set_index("rank")
-    render_table(result)
-    render_barchart(result)
+    table, bar = st.tabs(["Results", "Bar chart"])
+    with table:
+        render_table(result)
+    with bar:
+        render_barchart(result)
 
 
 def input_example():
