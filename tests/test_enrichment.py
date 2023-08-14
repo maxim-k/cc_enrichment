@@ -1,7 +1,7 @@
-from gene_set import GeneSet
-from gene_set_library import GeneSetLibrary
-from background_gene_set import BackgroundGeneSet
-from enrichment import Enrichment
+from code.gene_set import GeneSet
+from code.gene_set_library import GeneSetLibrary
+from code.background_gene_set import BackgroundGeneSet
+from code.enrichment import Enrichment
 from timeit import default_timer as timer
 
 

@@ -1,4 +1,4 @@
-from background_gene_set import BackgroundGeneSet
+from code.background_gene_set import BackgroundGeneSet
 
 
 class TestBackgroundGeneSet:

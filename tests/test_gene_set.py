@@ -1,4 +1,4 @@
-from gene_set import GeneSet
+from code.gene_set import GeneSet
 
 
 class TestGeneSet:

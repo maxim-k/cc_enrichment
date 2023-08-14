@@ -1,4 +1,4 @@
-from gene_set_library import GeneSetLibrary
+from code.gene_set_library import GeneSetLibrary
 
 
 class TestGeneSetLibrary:
