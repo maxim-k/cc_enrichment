@@ -5,10 +5,10 @@ class GeneSet:
     """
     Class for storing a gene set from a gene list.
     """
-    with open(f'{ROOT}/data/hgnc_symbols_2023-01-01.txt', 'r') as f:
+    with open(f'{ROOT}/data/backgrounds/hgnc_symbols_2023-01-01.txt', 'r') as f:
         hgnc_symbols: Set[str] = set(line.strip() for line in f)
 
-    def __init__(self, gene_list: List[str], hgcn: bool = True, format: bool = True) -> None:
+    def __init__(self, gene_list: List[str], name: str = "", hgcn: bool = True, format: bool = True) -> None:
         """
         Initialize the class with a list of genes, and two flags - 'hgcn' and 'format'.
 
@@ -18,6 +18,7 @@ class GeneSet:
             format: If set to True, capitalizes all genes from the input list
         """
         self.genes: Set[str] = set()
+        self.name: str = name
         self.size: int = 0
         self.validation: Dict[set[str]: set[str]] = {'duplicates': set(), 'non_hgnc': set()}
 

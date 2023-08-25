@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 import multiprocessing as mp
 
 import pandas as pd
@@ -55,7 +56,7 @@ class Enrichment:
     Class for gene set enrichment analysis results.
     """
 
-    def __init__(self, gene_set: GeneSet, gene_set_library: GeneSetLibrary, background_gene_set: BackgroundGeneSet):
+    def __init__(self, gene_set: GeneSet, gene_set_library: GeneSetLibrary, background_gene_set: BackgroundGeneSet, name: str = None):
         """
         Initialize the class with gene set, gene set library, and background gene set.
 
@@ -67,6 +68,7 @@ class Enrichment:
         self.gene_set = gene_set
         self.gene_set_library = gene_set_library
         self.background_gene_set = background_gene_set
+        self.name = name if name else f"{gene_set.name}_{gene_set_library.name}_{background_gene_set.name}_{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         self._results: List[Dict[str, Any]] = self._compute_enrichment()
 
     @property
@@ -99,7 +101,7 @@ class Enrichment:
         results = []
         with mp.Pool(mp.cpu_count()) as pool:
             parallel_results = pool.map(compute_pvalue, [(self.gene_set, self.background_gene_set, term) for term in
-                                                self.gene_set_library.library])
+                                                         self.gene_set_library.library])
 
         # Separate results and p_values for convenience
         p_values = [result[-1] for result in parallel_results]
@@ -144,3 +146,12 @@ class Enrichment:
     def to_tsv(self):
         """Return the enrichment results as a TSV spreadsheet."""
         return self.to_dataframe().to_csv(sep='\t')
+
+    def to_snapshot(self) -> Dict:
+        """Return the snapshot of input parameters and the enrichment results as a JSON string."""
+        return {
+            "input_gene_set": self.gene_set,
+            "library": self.gene_set_library.name,
+            "background": self.background_gene_set.name,
+            "results": self.to_json()
+        }

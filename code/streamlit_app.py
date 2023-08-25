@@ -1,4 +1,5 @@
 from math import log10
+import json
 
 import plotly.express as px
 import streamlit as st
@@ -19,7 +20,7 @@ st.set_page_config(
 
 ROOT = "/Users/codeocean/PycharmProjects/co_enrichment/"
 
-UPLOAD_FOLDER = f"{ROOT}/results/upload"
+UPLOAD_FOLDER = f"{ROOT}results/upload"
 
 
 def render_table(result):
@@ -88,14 +89,13 @@ def render_validation():
 
 def input_example():
     # Callback because that's the only way it works
-    state.text_input = open(f"{ROOT}/static/example_gene_list.txt").read()
+    state.gene_set_input = open(f"{ROOT}/static/example_gene_list.txt").read()
+    state.gene_set_name = "Example gene set"
 
 
 def main():
-    state.gene_set_library = GeneSetLibrary(f"{ROOT}/data/GO_Biological_Process_2023.gmt")
-    state.background_gene_set = BackgroundGeneSet(
-        open(f"{ROOT}/data/hgnc_symbols_2023-01-01.txt", "r").read().split()
-    )
+    state.gene_set_library = GeneSetLibrary(f"{ROOT}/data/libraries/c5.go.cc.v2023.1.Hs.symbols.gmt")
+    state.background_gene_set = BackgroundGeneSet(f"{ROOT}/data/backgrounds/hgnc_symbols_2023-01-01.txt")
 
     state.bt_submit_disabled = True
 
@@ -125,15 +125,19 @@ def main():
     #             state.bt_submit_disabled = False
 
     # with col_genes:
-    input_gene_set, settings = st.tabs(["Analyze", "Settings"])
+    # input_gene_set, settings = st.tabs(["Analyze", "Settings"])
+    if "results_ready" not in state:
+        state.results_ready = False
+
+    input_gene_set, settings = st.columns([5, 7])
     with input_gene_set:
-        st.text_area(label="Input a set of genes", key="text_input", height=400)
-        validate, submit, example = st.columns([9, 1, 2])
-        if "text_input" in state:
+        st.text_area(label="Input a set of genes", key="gene_set_input", height=400, placeholder="Input a gene set", label_visibility="collapsed")
+        st.text_input(label="Gene set name", key="gene_set_name", placeholder="Input a gene set name", label_visibility="collapsed")
+        submit, example, placholder = st.columns([1, 2, 2])
+        if "gene_set_input" in state:
             state.bt_submit_disabled = False
-            state.gene_set = GeneSet(state.text_input.split())
-            with validate:
-                render_validation()
+            state.gene_set = GeneSet(state.gene_set_input.split(), state.gene_set_name)
+            render_validation()
 
         with submit:
             bt_submit = st.button(
@@ -146,17 +150,31 @@ def main():
         if bt_submit:
             with st.spinner("Calculating enrichment"):
                 enrich = Enrichment(state.gene_set, state.gene_set_library, state.background_gene_set)
-            st.divider()
-            render_results(enrich)
+                with open(f"{ROOT}/results/{enrich.name}.json", "w") as results_snapshot:
+                    json.dump(enrich.results, results_snapshot)
+                state.results_ready = True
+
+    if state.results_ready:
+        st.divider()
+        render_results(enrich)
 
     with settings:
-        st.selectbox("Background gene set", options=["HGNC symbols (H. sapiens)", "Mouse"])
-        st.caption("Specifies the background set of genes. This set validates the input gene set against the chosen organism's genes and serves as a reference for p-value calculations.")
-
-        st.write
+        st.write("Background gene set")
+        st.selectbox("Background gene set", options=["HGNC symbols (H. sapiens)", "Mouse"],
+                     label_visibility="collapsed")
+        st.caption(
+            "Specifies the background set of genes. This set validates the input gene set against the chosen organism's genes and serves as a reference for p-value calculations.")
+        st.divider()
+        st.write('Select libraries')
         libraries = st.multiselect(
             'MSigDB C5 (ontology gene sets)',
-            ['GO Biological Process', 'GO Cellular Component', 'GO Molecular Function'])
+            ['GO Biological Process', 'GO Cellular Component', 'GO Molecular Function'],
+            default=['GO Biological Process', 'GO Cellular Component', 'GO Molecular Function'])
+        st.divider()
+        st.write('P-value calculation method')
+        st.selectbox('P-value calculation method',
+                     options=["Fisher's Exact Test", "Hypergeometric Test", "Chi-squared Test"],
+                     label_visibility="collapsed")
 
     return
 

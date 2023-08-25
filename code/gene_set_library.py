@@ -1,4 +1,5 @@
 from typing import List, Dict, Set
+from pathlib import Path
 
 
 class GeneSetLibrary:
@@ -6,7 +7,7 @@ class GeneSetLibrary:
     Class to represent gene set library.
     """
 
-    def __init__(self, gmt_file_path: str) -> None:
+    def __init__(self, gmt_file_path: str, name: str = "", organism: str = "Homo Sapiens") -> None:
         """
         Initialize gene set library from a .gmt file
 
@@ -16,6 +17,8 @@ class GeneSetLibrary:
         self.num_terms = len(self.library)
         self.unique_genes = self._compute_unique_genes()
         self.size = len(self.unique_genes)
+        self.name = name if name else Path(gmt_file_path).stem
+        self.organism = organism
 
     def _load_from_gmt(self, gmt_file_path: str) -> List[Dict[str, List[str]]]:
         """

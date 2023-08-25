@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 import pandas as pd
 
@@ -15,7 +16,7 @@ class Enrichment:
     Class for gene set enrichment analysis results.
     """
 
-    def __init__(self, gene_set: GeneSet, gene_set_library: GeneSetLibrary, background_gene_set: BackgroundGeneSet):
+    def __init__(self, gene_set: GeneSet, gene_set_library: GeneSetLibrary, background_gene_set: BackgroundGeneSet, name: str = None):
         """
         Initialize the class with gene set, gene set library, and background gene set.
 
@@ -27,6 +28,7 @@ class Enrichment:
         self.gene_set = gene_set
         self.gene_set_library = gene_set_library
         self.background_gene_set = background_gene_set
+        self.name = name if name else f"{gene_set.name}_{gene_set_library.name}_{background_gene_set.name}_{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         self._results: List[Dict[str, Any]] = self._compute_enrichment()
 
     @property
@@ -74,6 +76,16 @@ class Enrichment:
             _, p_value = fisher_exact(contingency_table)
             p_values.append(p_value)
 
+        # Hypergeometrical test
+        # from scipy.stats import hypergeom
+        # M, n, N = 100, 10, 5  # Example values
+        # rv = hypergeom(M, n, N)
+        # p_value = rv.sf(k - 1)
+
+        # Chi-squared test
+        # from scipy.stats import chi2_contingency
+        # chi2, p_value, _, _ = chi2_contingency(contingency_table)
+
         # Adjust p-values for multiple testing
         _, p_values_adjusted, _, _ = multipletests(p_values, method='fdr_bh')
 
@@ -91,7 +103,7 @@ class Enrichment:
             })
         return results
 
-    def to_dataframe(self):
+    def to_dataframe(self) -> pd.DataFrame:
         """Return the enrichment results as a pandas dataframe."""
         return pd.DataFrame({'rank': [result['rank'] for result in self.results],
                              'term': [result['term'] for result in self.results],
@@ -101,14 +113,23 @@ class Enrichment:
                              'fdr': [result['fdr'] for result in self.results]
                              })
 
-    def to_json(self):
+    def to_json(self) -> str:
         """Return the enrichment results as a JSON string."""
         return json.dumps(self.results, indent=4, separators=(',', ': '))
 
-    def to_html(self):
+    def to_html(self) -> str:
         """Return the enrichment results as an HTML page."""
         return self.to_dataframe().to_html()
 
-    def to_tsv(self):
+    def to_tsv(self) -> str:
         """Return the enrichment results as a TSV spreadsheet."""
         return self.to_dataframe().to_csv(sep='\t')
+
+    def to_snapshot(self) -> Dict:
+        """Return the snapshot of input parameters and the enrichment results as a JSON string."""
+        return {
+            "input_gene_set": self.gene_set,
+            "library": self.gene_set_library.name,
+            "background": self.background_gene_set.name,
+            "results": self.to_json()
+        }
