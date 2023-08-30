@@ -12,7 +12,7 @@ from gene_set_library import GeneSetLibrary
 from parallel_enrichment import Enrichment
 from streamlit import session_state as state
 
-# from treeview_streamlit_component import treeview_streamlit_component
+from textarea_onchange import textarea_onchange
 
 st.set_page_config(
     page_title="Enrichment Analysis", layout="wide", initial_sidebar_state="expanded"
@@ -131,13 +131,14 @@ def main():
 
     input_gene_set, settings = st.columns([5, 7])
     with input_gene_set:
-        st.text_area(label="Input a set of genes", key="gene_set_input", height=400, placeholder="Input a gene set", label_visibility="collapsed")
-        st.text_input(label="Gene set name", key="gene_set_name", placeholder="Input a gene set name", label_visibility="collapsed")
+        textarea_onchange(label="Input a set of genes", key="gene_set_input", height=400, placeholder="Input a gene set", label_visibility="collapsed")
+        textarea_onchange(label="Gene set name", key="gene_set_name",height=45, placeholder="Input a gene set name", label_visibility="collapsed")
         submit, example, placholder = st.columns([1, 2, 2])
         if "gene_set_input" in state:
             state.bt_submit_disabled = False
-            state.gene_set = GeneSet(state.gene_set_input.split(), state.gene_set_name)
-            render_validation()
+            if state.gene_set_input:
+                state.gene_set = GeneSet(state.gene_set_input.split(), state.gene_set_name)
+                render_validation()
 
         with submit:
             bt_submit = st.button(
@@ -151,7 +152,7 @@ def main():
             with st.spinner("Calculating enrichment"):
                 enrich = Enrichment(state.gene_set, state.gene_set_library, state.background_gene_set)
                 with open(f"{ROOT}/results/{enrich.name}.json", "w") as results_snapshot:
-                    json.dump(enrich.results, results_snapshot)
+                    json.dump(enrich.to_snapshot(), results_snapshot)
                 state.results_ready = True
 
     if state.results_ready:

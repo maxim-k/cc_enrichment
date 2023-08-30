@@ -151,7 +151,6 @@ class Enrichment:
         """Return the snapshot of input parameters and the enrichment results as a JSON string."""
         return {
             "input_gene_set": self.gene_set,
-            "library": self.gene_set_library.name,
             "background": self.background_gene_set.name,
-            "results": self.to_json()
+            self.gene_set_library.name: self.to_json()
         }
