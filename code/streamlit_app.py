@@ -89,7 +89,7 @@ def render_validation():
 
 def input_example():
     # Callback because that's the only way it works
-    state.gene_set_input = open(f"{ROOT}/static/example_gene_list.txt").read()
+    state.gene_set_input = open(f"{ROOT}/code/static/example_gene_list.txt").read()
     state.gene_set_name = "Example gene set"
 
 
@@ -99,7 +99,7 @@ def main():
 
     state.bt_submit_disabled = True
 
-    st.sidebar.image(Image.open(f"{ROOT}/static/CO_logo_135x72.png"), caption="Code Ocean")
+    st.sidebar.image(Image.open(f"{ROOT}/code/static/CO_logo_135x72.png"), caption="Code Ocean")
     st.sidebar.title("Enrichment analysis")
     st.sidebar.write(
         """This Streamlit app allows users to submit a list of genes and perform enrichment analysis using Gene Ontology pathways. The app displays enriched pathways and GO terms for the submitted genes, along with relevant statistics such as p-values and FDR corrections."""
