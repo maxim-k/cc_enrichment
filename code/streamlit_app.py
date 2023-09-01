@@ -131,8 +131,10 @@ def main():
 
     input_gene_set, settings = st.columns([5, 7])
     with input_gene_set:
-        textarea_onchange(label="Input a set of genes", key="gene_set_input", height=400, placeholder="Input a gene set", label_visibility="collapsed")
-        textarea_onchange(label="Gene set name", key="gene_set_name",height=45, placeholder="Input a gene set name", label_visibility="collapsed")
+        textarea_onchange(label="Input a set of genes", key="gene_set_input", height=400,
+                          placeholder="Input a gene set", label_visibility="collapsed")
+        textarea_onchange(label="Gene set name", key="gene_set_name", height=45, placeholder="Input a gene set name",
+                          label_visibility="collapsed")
         submit, example, placholder = st.columns([1, 2, 2])
         if "gene_set_input" in state:
             state.bt_submit_disabled = False
