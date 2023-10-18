@@ -27,27 +27,29 @@ def update_aliases(directory, alias_file="alias.json"):
     aliases_path = os.path.join(f"{ROOT}data/{directory}", alias_file)
     aliases = {}
 
-    # Check if aliases.json exists; if so, load its content.
     if os.path.isfile(aliases_path):
         with open(aliases_path, 'r') as file:
             aliases = json.load(file)
 
-    # List all files in the directory.
     files = [f for f in os.listdir(f"{ROOT}data/{directory}") if
              os.path.isfile(os.path.join(f"{ROOT}data/{directory}", f))]
 
-    # Remove 'alias.json' from the list of files.
+    # Remove 'alias.json' from the list of files
     if alias_file in files:
         files.remove(alias_file)
 
-    # Check for files that are not in the aliases dictionary and add them.
+    # Add a record if a file is not in aliases
     for file in files:
         if file not in aliases.values():
-            # Extract filename without extension.
             file_name_without_ext = os.path.splitext(file)[0]
             aliases[file_name_without_ext] = file
 
-    # Save the updated aliases back to aliases.json.
+    # Delete a record if a file is not in a folder
+    # files_without_ext = [os.path.splitext(file)[0] for file in files]
+    # aliases_to_delete = [key for key, value in aliases.items() if key not in files_without_ext]
+    # for key in aliases_to_delete:
+    #     del aliases[key]
+
     with open(aliases_path, 'w') as file:
         json.dump(aliases, file, indent=4)
 
@@ -241,7 +243,14 @@ def main():
         p_val_method = st.selectbox('P-value calculation method',
                                     options=["Fisher's Exact Test", "Hypergeometric Test", "Chi-squared Test"])
         bg_custom = st.file_uploader("Upload your background gene set", type=[".txt"])
-        lib_custom = st.file_uploader("Upload gene set libraries", type=[".gmt"], accept_multiple_files=True)
+        if bg_custom is not None:
+            bg_file = open(f'{ROOT}data/backgrounds/{bg_custom.name}', 'wb')
+            bg_file.write(bg_custom.getvalue())
+
+        libs_custom = st.file_uploader("Upload gene set libraries", type=[".gmt"], accept_multiple_files=True)
+        for lib_custom in libs_custom:
+            lib_file = open(f'{ROOT}data/libraries/{lib_custom.name}', 'wb')
+            lib_file.write(lib_custom.getvalue())
 
     if bt_submit:
         render_validation()
