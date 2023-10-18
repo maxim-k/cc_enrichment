@@ -100,7 +100,7 @@ def download_link(val, filename, extension):
     return f'<a href="data:application/octet-stream;base64,{b64.decode()}" download="{filename}.{extension}">{extension}</a>'
 
 
-def render_results(result):
+def render_results(result, file_name):
     result_df = result.to_dataframe().head(10)
     result_df = result_df.set_index("rank")
     table, bar = st.tabs(["Results", "Bar chart"])
@@ -110,7 +110,7 @@ def render_results(result):
         render_barchart(result_df)
 
     st.markdown(
-        f'Download results as {download_link(result.to_tsv(), "result", "tsv")}, {download_link(result.to_json(), "result", "json")}',
+        f'Download results as {download_link(result.to_tsv(), file_name, "tsv")}, {download_link(result.to_json(), file_name, "json")}',
         unsafe_allow_html=True)
 
 
@@ -237,17 +237,11 @@ def main():
         with example:
             st.button("Input an example", on_click=input_example)
     with advanced_settings:
-        st.write('P-value calculation method')
-        st.selectbox('P-value calculation method',
-                     options=["Fisher's Exact Test", "Hypergeometric Test", "Chi-squared Test"],
-                     label_visibility="collapsed")
-        st.divider()
-        st.write("Upload a background gene set")
-        bg_custom = st.file_uploader("Upload your background gene set", type=[".txt"], label_visibility="collapsed")
-        st.divider()
-        st.write("Upload gene set libraries")
-        lib_custom = st.file_uploader("Upload gene set libraries", type=[".gmt"], accept_multiple_files=True,
-                                      label_visibility="collapsed")
+        st.slider('Number of results to display', min_value=1, max_value=100, value=10, step=1)
+        p_val_method = st.selectbox('P-value calculation method',
+                                    options=["Fisher's Exact Test", "Hypergeometric Test", "Chi-squared Test"])
+        bg_custom = st.file_uploader("Upload your background gene set", type=[".txt"])
+        lib_custom = st.file_uploader("Upload gene set libraries", type=[".gmt"], accept_multiple_files=True)
 
     if bt_submit:
         render_validation()
@@ -269,7 +263,7 @@ Estimates for the number of DEGs based on comparison type:
 - Highly Different Conditions (e.g., healthy vs. cancerous tissue): Several thousand DEGs.""")
             with st.spinner("Calculating enrichment"):
                 for gene_set_library in state.gene_set_libraries:
-                    enrich = Enrichment(state.gene_set, gene_set_library, state.background_gene_set)
+                    enrich = Enrichment(state.gene_set, gene_set_library, state.background_gene_set, p_val_method)
                     state.enrich[gene_set_library.name] = enrich
                     with open(f"{ROOT}/results/{enrich.name}.json", "w") as results_snapshot:
                         json.dump(enrich.to_snapshot(), results_snapshot)
@@ -284,7 +278,7 @@ Estimates for the number of DEGs based on comparison type:
         st.divider()
         for library_name in state.enrich.keys():
             st.subheader(library_name)
-            render_results(state.enrich[library_name])
+            render_results(state.enrich[library_name], library_name)
 
     return
 

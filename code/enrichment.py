@@ -6,13 +6,22 @@ import pandas as pd
 
 from typing import List, Dict, Any, Tuple
 from scipy.stats import fisher_exact
+from scipy.stats import hypergeom
+from scipy.stats import chi2_contingency
 from statsmodels.stats.multitest import multipletests
 from gene_set import GeneSet
 from gene_set_library import GeneSetLibrary
 from background_gene_set import BackgroundGeneSet
 
 
-def compute_pvalue(args: Tuple[GeneSet, BackgroundGeneSet, dict]) -> Tuple[str, str, str, List[str], float]:
+# Hypergeometrical test
+#
+# M, n, N = 100, 10, 5  # Example values
+# rv = hypergeom(M, n, N)
+# p_value = rv.sf(k - 1)
+
+
+def compute_pvalue(args: Tuple[GeneSet, BackgroundGeneSet, dict, str]) -> Tuple[str, str, str, List[str], float]:
     """
     Computes the p-value for a given term using Fisher's exact test.
     This function is intended to be used with multiprocessing.Pool.map(),
@@ -23,7 +32,8 @@ def compute_pvalue(args: Tuple[GeneSet, BackgroundGeneSet, dict]) -> Tuple[str, 
         args: A tuple containing the following elements:
             - gene_set (GeneSet): The input gene set
             - background_gene_set (BackgroundGeneSet): The background gene set
-            - term (dict): A dictionary representing a term in the gene set library.
+            - term (dict): A dictionary representing a term in the gene set library
+            - p-value method (str): The name of the method to calculate p-value
 
     Returns:
         A tuple containing the following elements:
@@ -33,7 +43,7 @@ def compute_pvalue(args: Tuple[GeneSet, BackgroundGeneSet, dict]) -> Tuple[str, 
             - overlap genes (list): A list of genes in the overlap
             - p_value (float): The p-value computed by Fisher's exact test
     """
-    gene_set, background_gene_set, term = args
+    gene_set, background_gene_set, term, p_value_method_name = args
     term_genes = set(term['genes'])
     n_term_genes = len(term_genes)
     overlap = gene_set.genes & term_genes
@@ -45,8 +55,14 @@ def compute_pvalue(args: Tuple[GeneSet, BackgroundGeneSet, dict]) -> Tuple[str, 
                          [gene_set.size - n_overlap,
                           background_gene_set.size - n_term_genes - gene_set.size + n_overlap]]
 
-    # Perform Fisher's exact test
-    _, p_value = fisher_exact(contingency_table)
+    if p_value_method_name == "Fisher's Exact Test":
+        _, p_value = fisher_exact(contingency_table)
+    elif p_value_method_name == "Chi-squared Test":
+        chi2, p_value, _, _ = chi2_contingency(contingency_table)
+    elif p_value_method_name == "Hypergeometric Test":
+        p_value = hypergeom.sf(n_overlap - 1, background_gene_set.size, n_term_genes, gene_set.size)
+    else:
+        raise ValueError(f"Unsupported p_value_method: {p_value_method_name}")
 
     return term['name'], f'{len(overlap)}/{len(term["genes"])}', term['description'], sorted(list(overlap)), p_value
 
@@ -56,7 +72,8 @@ class Enrichment:
     Class for gene set enrichment analysis results.
     """
 
-    def __init__(self, gene_set: GeneSet, gene_set_library: GeneSetLibrary, background_gene_set: BackgroundGeneSet, name: str = None):
+    def __init__(self, gene_set: GeneSet, gene_set_library: GeneSetLibrary, background_gene_set: BackgroundGeneSet,
+                 p_value_method_name="Fisher's Exact Test", name: str = None):
         """
         Initialize the class with gene set, gene set library, and background gene set.
 
@@ -68,6 +85,7 @@ class Enrichment:
         self.gene_set = gene_set
         self.gene_set_library = gene_set_library
         self.background_gene_set = background_gene_set
+        self.p_value_method_name = p_value_method_name
         self.name = name if name else f"{gene_set.name}_{gene_set_library.name}_{background_gene_set.name}_{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         self._results: List[Dict[str, Any]] = self._compute_enrichment()
 
@@ -100,8 +118,10 @@ class Enrichment:
         """
         results = []
         with mp.Pool(mp.cpu_count()) as pool:
-            parallel_results = pool.map(compute_pvalue, [(self.gene_set, self.background_gene_set, term) for term in
-                                                         self.gene_set_library.library])
+            parallel_results = pool.map(compute_pvalue,
+                                        [(self.gene_set, self.background_gene_set, term, self.p_value_method_name) for
+                                         term in
+                                         self.gene_set_library.library])
 
         # Separate results and p_values for convenience
         p_values = [result[-1] for result in parallel_results]
