@@ -11,7 +11,7 @@ import pandas as pd
 from background_gene_set import BackgroundGeneSet
 from gene_set import GeneSet
 from gene_set_library import GeneSetLibrary
-from parallel_enrichment import Enrichment
+from enrichment import Enrichment
 from streamlit import session_state as state
 
 st.set_page_config(

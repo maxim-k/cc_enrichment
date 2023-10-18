@@ -1,14 +1,54 @@
 import json
 from datetime import datetime
+import multiprocessing as mp
 
 import pandas as pd
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 from scipy.stats import fisher_exact
 from statsmodels.stats.multitest import multipletests
 from gene_set import GeneSet
 from gene_set_library import GeneSetLibrary
 from background_gene_set import BackgroundGeneSet
+
+
+def compute_pvalue(args: Tuple[GeneSet, BackgroundGeneSet, dict]) -> Tuple[str, str, str, List[str], float]:
+    """
+    Computes the p-value for a given term using Fisher's exact test.
+    This function is intended to be used with multiprocessing.Pool.map(),
+    which requires functions to take a single argument. Therefore, the
+    inputs are passed as a single tuple.
+
+    Args:
+        args: A tuple containing the following elements:
+            - gene_set (GeneSet): The input gene set
+            - background_gene_set (BackgroundGeneSet): The background gene set
+            - term (dict): A dictionary representing a term in the gene set library.
+
+    Returns:
+        A tuple containing the following elements:
+            - term name (str): The name of the term
+            - overlap size (int): The size of the overlap between the gene set and the term
+            - term description (str): The description of the term
+            - overlap genes (list): A list of genes in the overlap
+            - p_value (float): The p-value computed by Fisher's exact test
+    """
+    gene_set, background_gene_set, term = args
+    term_genes = set(term['genes'])
+    n_term_genes = len(term_genes)
+    overlap = gene_set.genes & term_genes
+    n_overlap = len(overlap)
+
+    # Build contingency table for Fisher's exact test
+    contingency_table = [[n_overlap,
+                          n_term_genes - n_overlap],
+                         [gene_set.size - n_overlap,
+                          background_gene_set.size - n_term_genes - gene_set.size + n_overlap]]
+
+    # Perform Fisher's exact test
+    _, p_value = fisher_exact(contingency_table)
+
+    return term['name'], f'{len(overlap)}/{len(term["genes"])}', term['description'], sorted(list(overlap)), p_value
 
 
 class Enrichment:
@@ -59,76 +99,60 @@ class Enrichment:
             A list containing dictionaries of enrichment results
         """
         results = []
-        p_values = []
-        for term in self.gene_set_library.library:
-            term_genes = set(term['genes'])
-            n_term_genes = len(term_genes)
-            overlap = self.gene_set.genes & term_genes
-            n_overlap = len(overlap)
+        with mp.Pool(mp.cpu_count()) as pool:
+            parallel_results = pool.map(compute_pvalue, [(self.gene_set, self.background_gene_set, term) for term in
+                                                         self.gene_set_library.library])
 
-            # Build contingency table for Fisher's exact test
-            contingency_table = [[n_overlap,
-                                  n_term_genes - n_overlap],
-                                 [self.gene_set.size - n_overlap,
-                                  self.background_gene_set.size - n_term_genes - self.gene_set.size + n_overlap]]
-
-            # Perform Fisher's exact test
-            _, p_value = fisher_exact(contingency_table)
-            p_values.append(p_value)
-
-        # Hypergeometrical test
-        # from scipy.stats import hypergeom
-        # M, n, N = 100, 10, 5  # Example values
-        # rv = hypergeom(M, n, N)
-        # p_value = rv.sf(k - 1)
-
-        # Chi-squared test
-        # from scipy.stats import chi2_contingency
-        # chi2, p_value, _, _ = chi2_contingency(contingency_table)
+        # Separate results and p_values for convenience
+        p_values = [result[-1] for result in parallel_results]
 
         # Adjust p-values for multiple testing
         _, p_values_adjusted, _, _ = multipletests(p_values, method='fdr_bh')
 
         # Rank terms based on their p-values
-        ranked_terms = sorted(list(enumerate(self.gene_set_library.library)), key=lambda x: p_values[x[0]])
+        ranked_terms = sorted(list(enumerate(parallel_results)), key=lambda x: p_values[x[0]])
 
-        for i, term in ranked_terms:
+        # Format results into a sorted list
+        for i, result in ranked_terms:
+            term_name, overlap_size, term_description, overlap_genes, _ = result
             results.append({
-                'term': term['name'],
+                'term': term_name,
                 'rank': i + 1,
-                'description': term['description'],
-                'overlap': sorted(list(self.gene_set.genes & set(term['genes']))),
+                'description': term_description,
+                'overlap': overlap_genes,
+                'overlap_size': overlap_size,
                 'p-value': p_values[i],
                 'fdr': p_values_adjusted[i]
             })
+
         return results
 
-    def to_dataframe(self) -> pd.DataFrame:
+    def to_dataframe(self):
         """Return the enrichment results as a pandas dataframe."""
         return pd.DataFrame({'rank': [result['rank'] for result in self.results],
                              'term': [result['term'] for result in self.results],
-                             'description': [result['description'] for result in self.results],
                              'overlap': [result['overlap'] for result in self.results],
+                             'overlap_size': [result['overlap_size'] for result in self.results],
                              'p-value': [result['p-value'] for result in self.results],
                              'fdr': [result['fdr'] for result in self.results]
                              })
 
-    def to_json(self) -> str:
+    def to_json(self):
         """Return the enrichment results as a JSON string."""
         return json.dumps(self.results, indent=4, separators=(',', ': '))
 
-    def to_html(self) -> str:
+    def to_html(self):
         """Return the enrichment results as an HTML page."""
         return self.to_dataframe().to_html()
 
-    def to_tsv(self) -> str:
+    def to_tsv(self):
         """Return the enrichment results as a TSV spreadsheet."""
         return self.to_dataframe().to_csv(sep='\t')
 
     def to_snapshot(self) -> Dict:
         """Return the snapshot of input parameters and the enrichment results as a JSON string."""
         return {
-            "input_gene_set": self.gene_set,
+            "input_gene_set": list(self.gene_set.genes),
             "background": self.background_gene_set.name,
-            self.gene_set_library.name: self.to_json()
+            self.gene_set_library.name: self.results
         }
