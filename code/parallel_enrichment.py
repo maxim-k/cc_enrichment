@@ -12,7 +12,7 @@ from gene_set_library import GeneSetLibrary
 from background_gene_set import BackgroundGeneSet
 
 
-def compute_pvalue(args: Tuple[GeneSet, BackgroundGeneSet, dict]) -> Tuple[str, int, str, List[str], float]:
+def compute_pvalue(args: Tuple[GeneSet, BackgroundGeneSet, dict]) -> Tuple[str, str, str, List[str], float]:
     """
     Computes the p-value for a given term using Fisher's exact test.
     This function is intended to be used with multiprocessing.Pool.map(),
@@ -48,7 +48,7 @@ def compute_pvalue(args: Tuple[GeneSet, BackgroundGeneSet, dict]) -> Tuple[str, 
     # Perform Fisher's exact test
     _, p_value = fisher_exact(contingency_table)
 
-    return term['name'], len(overlap), term['description'], sorted(list(overlap)), p_value
+    return term['name'], f'{len(overlap)}/{len(term["genes"])}', term['description'], sorted(list(overlap)), p_value
 
 
 class Enrichment:
@@ -120,6 +120,7 @@ class Enrichment:
                 'rank': i + 1,
                 'description': term_description,
                 'overlap': overlap_genes,
+                'overlap_size': overlap_size,
                 'p-value': p_values[i],
                 'fdr': p_values_adjusted[i]
             })
@@ -131,6 +132,7 @@ class Enrichment:
         return pd.DataFrame({'rank': [result['rank'] for result in self.results],
                              'term': [result['term'] for result in self.results],
                              'overlap': [result['overlap'] for result in self.results],
+                             'overlap_size': [result['overlap_size'] for result in self.results],
                              'p-value': [result['p-value'] for result in self.results],
                              'fdr': [result['fdr'] for result in self.results]
                              })
@@ -150,7 +152,7 @@ class Enrichment:
     def to_snapshot(self) -> Dict:
         """Return the snapshot of input parameters and the enrichment results as a JSON string."""
         return {
-            "input_gene_set": self.gene_set,
+            "input_gene_set": list(self.gene_set.genes),
             "background": self.background_gene_set.name,
-            self.gene_set_library.name: self.to_json()
+            self.gene_set_library.name: self.results
         }
