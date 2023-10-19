@@ -44,11 +44,10 @@ def update_aliases(directory, alias_file="alias.json"):
             file_name_without_ext = os.path.splitext(file)[0]
             aliases[file_name_without_ext] = file
 
-    # Delete a record if a file is not in a folder
-    # files_without_ext = [os.path.splitext(file)[0] for file in files]
-    # aliases_to_delete = [key for key, value in aliases.items() if key not in files_without_ext]
-    # for key in aliases_to_delete:
-    #     del aliases[key]
+    # Delete a record from aliases if there's no corresponding file
+    aliases_keys_to_delete = [key for key in aliases if aliases[key] not in files]
+    for key in aliases_keys_to_delete:
+        del aliases[key]
 
     with open(aliases_path, 'w') as file:
         json.dump(aliases, file, indent=4)
