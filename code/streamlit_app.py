@@ -1,38 +1,56 @@
-from math import log10
+import base64
 import json
 import os
-import base64
+from math import log10
+from typing import Dict
+from pathlib import Path
 
+import pandas as pd
 import plotly.express as px
 import streamlit as st
-from PIL import Image
-import pandas as pd
-
 from background_gene_set import BackgroundGeneSet
+from dotenv import load_dotenv
+from enrichment import Enrichment
 from gene_set import GeneSet
 from gene_set_library import GeneSetLibrary
-from enrichment import Enrichment
+from PIL import Image
 from streamlit import session_state as state
+
+load_dotenv()
+ROOT = Path(os.getenv("ROOT") or ".")
 
 st.set_page_config(
     page_title="Enrichment Analysis", layout="wide", initial_sidebar_state="expanded"
 )
 
-ROOT = "/Users/codeocean/PycharmProjects/co_enrichment/"
 
-UPLOAD_FOLDER = f"{ROOT}results/upload"
+def update_aliases(directory: str, alias_file: Path = Path("alias.json")) -> Dict[str, str]:
+    """
+    Update the aliases file with the current set of files in the specified directory.
 
+    This function scans a specified directory for files, keeping an 'alias.json' file that contains
+    a mapping of simplified names to actual file names. This allows for easier reference to the files
+    in that directory. If new files are added to the directory, they are added to the 'alias.json'. If files
+    are missing, they are removed from 'alias.json'.
 
-def update_aliases(directory, alias_file="alias.json"):
-    aliases_path = os.path.join(f"{ROOT}data/{directory}", alias_file)
-    aliases = {}
+    :param directory: The directory to scan for files.
+    :param alias_file: The name of the alias file, defaults to 'alias.json'
+    :return: A dictionary containing the aliases, with keys being the simplified names and values being the actual file names.
+    """
+    aliases_path = ROOT / "data" / directory / alias_file
 
     if os.path.isfile(aliases_path):
-        with open(aliases_path, 'r') as file:
-            aliases = json.load(file)
+        try:
+            with open(aliases_path, "r") as file:
+                alias = json.load(file)
+        except (FileNotFoundError, json.JSONDecodeError):
+            st.warning(f"Failed to load aliases from {aliases_path}")
 
-    files = [f for f in os.listdir(f"{ROOT}data/{directory}") if
-             os.path.isfile(os.path.join(f"{ROOT}data/{directory}", f))]
+    files = [
+        f
+        for f in (ROOT / "data" / directory).iterdir()
+        if f.is_file()
+    ]
 
     # Remove 'alias.json' from the list of files
     if alias_file in files:
@@ -40,26 +58,36 @@ def update_aliases(directory, alias_file="alias.json"):
 
     # Add a record if a file is not in aliases
     for file in files:
-        if file not in aliases.values():
+        if file not in alias.values():
             file_name_without_ext = os.path.splitext(file)[0]
-            aliases[file_name_without_ext] = file
+            alias[file_name_without_ext] = file
 
     # Delete a record from aliases if there's no corresponding file
-    aliases_keys_to_delete = [key for key in aliases if aliases[key] not in files]
+    aliases_keys_to_delete = [key for key in alias if alias[key] not in files]
     for key in aliases_keys_to_delete:
-        del aliases[key]
+        del alias[key]
 
-    with open(aliases_path, 'w') as file:
-        json.dump(aliases, file, indent=4)
+    with open(aliases_path, "w") as file:
+        json.dump(alias, file, indent=4)
 
-    return aliases
+    return alias
 
 
 lib_mapper = update_aliases("libraries")
 bg_mapper = update_aliases("backgrounds")
 
 
-def render_table(result):
+def render_table(result: pd.DataFrame) -> None:
+    """
+    Render a styled DataFrame within the Streamlit app.
+
+    This function takes a DataFrame containing results data and applies custom formatting before
+    displaying it within the Streamlit app using the `st.dataframe` function. Custom formatting includes
+    specific number formatting for 'p-value' and 'fdr' columns.
+
+    :param result: The DataFrame containing results data to display.
+    """
+
     def custom_format(n):
         if n > 0.001:
             return f"{n:.3f}"
@@ -81,7 +109,15 @@ def render_table(result):
     )
 
 
-def render_barchart(result):
+def render_barchart(result: pd.DataFrame) -> None:
+    """
+    Render a bar chart visualization of the results data within the Streamlit app.
+
+    This function takes a DataFrame containing results data, specifically terms and p-values, and creates
+    a bar chart using Plotly Express, which is then displayed in the Streamlit app using the `st.plotly_chart` function.
+
+    :param result: The DataFrame containing results data to visualize.
+    """
     bar = result[["term", "p-value"]]
     bar.loc[:, "p-value"] = bar.loc[:, "p-value"].apply(lambda x: -1 * log10(x))
     bar = bar.sort_values(by=["p-value"])
@@ -96,13 +132,36 @@ def render_barchart(result):
     st.plotly_chart(fig, use_container_width=True)
 
 
-def download_link(val, filename, extension):
-    b64 = base64.b64encode(val.encode('utf-8'))
+def download_link(val: str, filename: str, extension: str) -> str:
+    """
+    Create a download link for a file with the given content, filename, and extension.
+
+    This function generates a download link that, when clicked, will download the file with the given
+    content, filename, and extension. The content is encoded in base64 and the link is created using an
+    HTML 'a' tag with a 'download' attribute.
+
+    :param val: The content of the file to be downloaded.
+    :param filename: The name of the file, without the extension.
+    :param extension: The file extension (e.g., 'tsv', 'json').
+    :return: An HTML string containing the download link.
+    """
+    b64 = base64.b64encode(val.encode("utf-8"))
     return f'<a href="data:application/octet-stream;base64,{b64.decode()}" download="{filename}.{extension}">{extension}</a>'
 
 
-def render_results(result, file_name):
-    result_df = result.to_dataframe().head(10)
+def render_results(result: Enrichment, file_name: str, n_results: int = 10) -> None:
+    """
+    Render a results section within the Streamlit app.
+
+    This function processes and visualizes the result data within the Streamlit app. It provides
+    a table visualization and a bar chart visualization of the top results. Additionally, it
+    allows the user to download the results in various formats.
+
+    :param result: The DataFrame containing results data to display.
+    :param file_name: The name of the file to be used for downloading results.
+    :param n_results: Numbers of results to display
+    """
+    result_df = result.to_dataframe().head(n_results)
     result_df = result_df.set_index("rank")
     table, bar = st.tabs(["Results", "Bar chart"])
     with table:
@@ -112,14 +171,21 @@ def render_results(result, file_name):
 
     st.markdown(
         f'Download results as {download_link(result.to_tsv(), file_name, "tsv")}, {download_link(result.to_json(), file_name, "json")}',
-        unsafe_allow_html=True)
+        unsafe_allow_html=True,
+    )
 
 
-def render_validation():
+def render_validation() -> None:
+    """
+    Validate and render the gene set information.
+
+    This function checks the `gene_set` in the session state for duplicates and invalid entries.
+    It then provides a feedback to the user in the Streamlit app on the validation results.
+    """
     if "gene_set" in state:
         total = state.gene_set.size
-        dups = len(state.gene_set.validation['duplicates'])
-        non_gene = len(state.gene_set.validation['non_hgnc'])
+        dups = len(state.gene_set.validation["duplicates"])
+        non_gene = len(state.gene_set.validation["non_hgnc"])
         if dups:
             dups_st = f", ⚠️ {dups} duplicates"
         else:
@@ -132,22 +198,20 @@ def render_validation():
         with st.expander(caption):
             if dups:
                 st.data_editor(
-                    pd.json_normalize(state.gene_set.validation)['duplicates'],
+                    pd.json_normalize(state.gene_set.validation)["duplicates"],
                     column_config={
                         "duplicates": st.column_config.ListColumn(
-                            dups_st[2:],
-                            width="large"
+                            dups_st[2:], width="large"
                         ),
                     },
                     hide_index=True,
                 )
             if non_gene:
                 st.data_editor(
-                    pd.json_normalize(state.gene_set.validation)['non_hgnc'],
+                    pd.json_normalize(state.gene_set.validation)["non_hgnc"],
                     column_config={
                         "non_hgnc": st.column_config.ListColumn(
-                            non_gene_st[2:],
-                            width="large"
+                            non_gene_st[2:], width="large"
                         ),
                     },
                     hide_index=True,
@@ -155,42 +219,38 @@ def render_validation():
         state.bt_submit_disabled = False
 
 
-def input_example():
+def input_example() -> None:
+    """
+    Set the example input for the Streamlit app.
+
+    This function loads the example gene set and populates the `gene_set_input` and
+    `gene_set_name` in the session state with the content and name of the example respectively.
+    """
     # Callback because that's the only way it works
-    state.gene_set_input = open(f"{ROOT}/code/static/example_gene_list.txt").read()
+    state.gene_set_input = (ROOT / "code" / "static" / "example_gene_list.txt").read_text()
     state.gene_set_name = "Example gene set"
 
 
-def main():
+def main() -> None:
+    """
+    The main function of the Streamlit application.
+
+    This function sets up the Streamlit app layout, handles user inputs, controls application flow,
+    and displays results. It uses various Streamlit components (e.g., st.button, st.dataframe) to
+    interact with the user and present information.
+    """
     state.bt_submit_disabled = True
 
-    st.sidebar.image(Image.open(f"{ROOT}/code/static/CO_logo_135x72.png"), caption="Code Ocean")
+    st.sidebar.image(
+        Image.open(f"{ROOT}/code/static/CO_logo_135x72.png"), caption="Code Ocean"
+    )
     st.sidebar.title("Enrichment analysis")
     st.sidebar.write(
         """This Streamlit app allows users to submit a list of genes and perform enrichment analysis using Gene Ontology pathways. The app displays enriched pathways and GO terms for the submitted genes, along with relevant statistics such as p-values and FDR corrections."""
     )
 
-    # st.divider()
     st.subheader("Enrichment analysis")
-    # col_input, col_genes = st.columns(2)
-    # with col_input:
-    #     # input_local, input_capsule = st.tabs(["Upload a file", "Browse files in the capsule"])
-    #
-    #     # with input_local:
-    #     uploaded_file = st.file_uploader(
-    #         "Upload a set of genes from your local drive",
-    #         help="Upload a new line separated set of genes",
-    #     )
-    #     if uploaded_file is not None:
-    #         with open(f"{UPLOAD_FOLDER}/{uploaded_file.name}", "wb") as f:
-    #             f.write(uploaded_file.getvalue())
-    #         uploaded_value = StringIO(uploaded_file.getvalue().decode("utf-8")).read()
-    #         if re.match(hgnc_input_pattern, uploaded_value):
-    #             gene_list = uploaded_value
-    #             state.bt_submit_disabled = False
 
-    # with col_genes:
-    # input_gene_set, settings = st.tabs(["Analyze", "Settings"])
     state.enrich = dict()
     if "results_ready" not in state:
         state.results_ready = False
@@ -200,34 +260,53 @@ def main():
     with analysis:
         input_gene_set, settings = st.columns([5, 7])
         with input_gene_set:
-            st.text_area(label="Input a set of genes", key="gene_set_input", height=438,
-                         placeholder="Input a gene set", label_visibility="collapsed")
-            st.text_input(label="Gene set name", key="gene_set_name", placeholder="Input a gene set name",
-                          label_visibility="collapsed")
+            st.text_area(
+                label="Input a set of genes",
+                key="gene_set_input",
+                height=438,
+                placeholder="Input a gene set",
+                label_visibility="collapsed",
+            )
+            st.text_input(
+                label="Gene set name",
+                key="gene_set_name",
+                placeholder="Input a gene set name",
+                label_visibility="collapsed",
+            )
 
             if "gene_set_input" in state:
                 state.bt_submit_disabled = False
                 if state.gene_set_input:
-                    state.gene_set = GeneSet(state.gene_set_input.split(), state.gene_set_name)
+                    state.gene_set = GeneSet(
+                        state.gene_set_input.split(), state.gene_set_name
+                    )
 
         with settings:
             st.write("Background gene set")
-            background_set = st.selectbox("Background gene set",
-                                          bg_mapper.keys(),
-                                          label_visibility="collapsed")
+            background_set = st.selectbox(
+                "Background gene set", bg_mapper.keys(), label_visibility="collapsed"
+            )
 
             st.caption(
-                "Specifies the background set of genes. This set validates the input gene set against the chosen organism's genes and serves as a reference for p-value calculations.")
+                "Specifies the background set of genes. This set validates the input gene set against the chosen organism's genes and serves as a reference for p-value calculations."
+            )
             st.divider()
-            st.write('Select libraries')
+            st.write("Select libraries")
             libraries = st.multiselect(
-                'MSigDB C5 (ontology gene sets)',
+                "MSigDB C5 (ontology gene sets)",
                 lib_mapper.keys(),
-                default=[list(lib_mapper.keys())[0]])
+                default=[list(lib_mapper.keys())[0]],
+            )
 
-            state.gene_set_libraries = [GeneSetLibrary(f"{ROOT}/data/libraries/{lib_mapper[library]}", name=library) for
-                                        library in libraries]
-            state.background_gene_set = BackgroundGeneSet(f"{ROOT}/data/backgrounds/{bg_mapper[background_set]}")
+            state.gene_set_libraries = [
+                GeneSetLibrary(
+                    str(ROOT / "data" / "libraries" / lib_mapper[library]), name=library
+                )
+                for library in libraries
+            ]
+            state.background_gene_set = BackgroundGeneSet(
+                str(ROOT / "data" / "backgrounds" / bg_mapper[background_set])
+            )
 
         submit, example, placeholder = st.columns([2, 2, 8])
         with submit:
@@ -238,42 +317,53 @@ def main():
         with example:
             st.button("Input an example", on_click=input_example)
     with advanced_settings:
-        st.slider('Number of results to display', min_value=1, max_value=100, value=10, step=1)
-        p_val_method = st.selectbox('P-value calculation method',
-                                    options=["Fisher's Exact Test", "Hypergeometric Test", "Chi-squared Test"])
+        st.slider(
+            "Number of results to display", min_value=1, max_value=100, value=10, step=1
+        )
+        p_val_method = st.selectbox(
+            "P-value calculation method",
+            options=["Fisher's Exact Test", "Hypergeometric Test", "Chi-squared Test"],
+        )
         bg_custom = st.file_uploader("Upload your background gene set", type=[".txt"])
         if bg_custom is not None:
-            bg_file = open(f'{ROOT}data/backgrounds/{bg_custom.name}', 'wb')
+            bg_file = (ROOT / "data" / "backgrounds" / bg_custom.name).open("wb")
             bg_file.write(bg_custom.getvalue())
 
-        libs_custom = st.file_uploader("Upload gene set libraries", type=[".gmt"], accept_multiple_files=True)
+        libs_custom = st.file_uploader(
+            "Upload gene set libraries", type=[".gmt"], accept_multiple_files=True
+        )
         for lib_custom in libs_custom:
-            lib_file = open(f'{ROOT}data/libraries/{lib_custom.name}', 'wb')
+            lib_file = (ROOT / "data" / "libraries" / lib_custom.name).open("wb")
             lib_file.write(lib_custom.getvalue())
 
     if bt_submit:
         render_validation()
         # if (state.gene_set_input) and (True in go_libraries.values()):
         if state.gene_set_input:
-            n_genes = len(state.gene_set_input.split('\n'))
-            if (n_genes <= 10) or (
-                    n_genes >= 5000
-            ):
+            n_genes = len(state.gene_set_input.split("\n"))
+            if (n_genes <= 10) or (n_genes >= 5000):
                 if n_genes <= 100:
                     n_warn = "small"
                 elif n_genes >= 2000:
                     n_warn = "big"
-                s = 's' if str(n_genes)[-1] != 1 else ''
-                st.warning(f"""You've entered {n_genes} gene{s}, which may be {n_warn} and could affect result accuracy. Consider adjusting p-value or log2 Fold Change.  
+                s = "s" if str(n_genes)[-1] != 1 else ""
+                st.warning(
+                    f"""You've entered {n_genes} gene{s}, which may be {n_warn} and could affect result accuracy. Consider adjusting p-value or log2 Fold Change.  
 Estimates for the number of DEGs based on comparison type:
 - Similar Conditions (e.g., same cell type, small treatment variations): Dozens to hundreds of DEGs.
 - Moderately Different Conditions (e.g., different cell types, moderate drug treatment): Hundreds to thousands.
-- Highly Different Conditions (e.g., healthy vs. cancerous tissue): Several thousand DEGs.""")
+- Highly Different Conditions (e.g., healthy vs. cancerous tissue): Several thousand DEGs."""
+                )
             with st.spinner("Calculating enrichment"):
                 for gene_set_library in state.gene_set_libraries:
-                    enrich = Enrichment(state.gene_set, gene_set_library, state.background_gene_set, p_val_method)
+                    enrich = Enrichment(
+                        state.gene_set,
+                        gene_set_library,
+                        state.background_gene_set,
+                        p_val_method,
+                    )
                     state.enrich[gene_set_library.name] = enrich
-                    with open(f"{ROOT}/results/{enrich.name}.json", "w") as results_snapshot:
+                    with (ROOT / "results" / f"{enrich.name}.json").open("w") as results_snapshot:
                         json.dump(enrich.to_snapshot(), results_snapshot)
                 state.results_ready = True
         else:
