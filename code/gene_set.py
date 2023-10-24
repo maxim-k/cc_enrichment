@@ -1,6 +1,13 @@
+import os
+from pathlib import Path
 from typing import List, Set, Dict
 
-ROOT = "/Users/codeocean/PycharmProjects/co_enrichment/"
+from dotenv import load_dotenv
+
+load_dotenv()
+ROOT = Path(os.getenv("ROOT") or ".")
+
+
 class GeneSet:
     """
     Class for storing a gene set from a gene list.
