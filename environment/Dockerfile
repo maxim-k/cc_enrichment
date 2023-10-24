@@ -1,4 +1,4 @@
-# hash:sha256:51a878fce4b1eaea0cc37af067dc23e6827754ff0b1c55d1dce907d04c0d2724
+# hash:sha256:c1d7551e39e7a24a0f9289aa5170b615918a57420a2c57401e7b049cdf5274fc
 FROM registry.apps.codeocean.com/codeocean/mambaforge3:22.11.1-4-ubuntu22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -9,7 +9,7 @@ COPY git-askpass /
 
 RUN pip3 install -U --no-cache-dir \
     pandas==2.0.3 \
-    pillow \
+    pillow==9.5.0 \
     plotly==5.16.1 \
     python-dotenv==1.0.0 \
     scipy==1.11.2 \
