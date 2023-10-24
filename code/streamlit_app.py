@@ -24,7 +24,7 @@ st.set_page_config(
 )
 
 
-def update_aliases(directory: str, alias_file: Path = Path("alias.json")) -> Dict[str, str]:
+def update_aliases(directory: str, alias_file: str = "alias.json") -> Dict[str, str]:
     """
     Update the aliases file with the current set of files in the specified directory.
 
@@ -39,7 +39,7 @@ def update_aliases(directory: str, alias_file: Path = Path("alias.json")) -> Dic
     """
     aliases_path = ROOT / "data" / directory / alias_file
 
-    if os.path.isfile(aliases_path):
+    if Path(aliases_path).is_file():
         try:
             with open(aliases_path, "r") as file:
                 alias = json.load(file)
@@ -53,17 +53,17 @@ def update_aliases(directory: str, alias_file: Path = Path("alias.json")) -> Dic
     ]
 
     # Remove 'alias.json' from the list of files
-    if alias_file in files:
-        files.remove(alias_file)
+    if Path(aliases_path) in files:
+        files.remove(Path(aliases_path))
 
     # Add a record if a file is not in aliases
     for file in files:
-        if file not in alias.values():
-            file_name_without_ext = os.path.splitext(file)[0]
-            alias[file_name_without_ext] = file
+        if file.name not in alias.values():
+            alias[file.stem] = file.name
 
     # Delete a record from aliases if there's no corresponding file
-    aliases_keys_to_delete = [key for key in alias if alias[key] not in files]
+    aliases_keys_to_delete = [key for key in alias if alias[key] not in [file.name for file in files]]
+
     for key in aliases_keys_to_delete:
         del alias[key]
 
@@ -71,10 +71,6 @@ def update_aliases(directory: str, alias_file: Path = Path("alias.json")) -> Dic
         json.dump(alias, file, indent=4)
 
     return alias
-
-
-lib_mapper = update_aliases("libraries")
-bg_mapper = update_aliases("backgrounds")
 
 
 def render_table(result: pd.DataFrame) -> None:
@@ -147,6 +143,21 @@ def download_link(val: str, filename: str, extension: str) -> str:
     """
     b64 = base64.b64encode(val.encode("utf-8"))
     return f'<a href="data:application/octet-stream;base64,{b64.decode()}" download="{filename}.{extension}">{extension}</a>'
+
+
+def collect_results(results: Dict) -> str:
+    """
+    Concatenate all enrichment results. For each result adds a column with a library name.
+
+    :param results: The dictionary containing enrichment results.
+    """
+    results_concat = []
+    for library_name in results.keys():
+        result = results[library_name].to_dataframe()
+        result.insert(0, 'Library', library_name)
+        results_concat.append(result)
+
+    return pd.concat(results_concat, ignore_index=True).to_csv(sep="\t", index=False)
 
 
 def render_results(result: Enrichment, file_name: str, n_results: int = 10) -> None:
@@ -255,6 +266,10 @@ def main() -> None:
     if "results_ready" not in state:
         state.results_ready = False
 
+    state.lib_mapper = update_aliases("libraries")
+    state.bg_mapper = update_aliases("backgrounds")
+    state.advanced_settings_changed = False
+
     analysis, advanced_settings = st.tabs(["Analysis", "Advanced settings"])
 
     with analysis:
@@ -284,7 +299,7 @@ def main() -> None:
         with settings:
             st.write("Background gene set")
             background_set = st.selectbox(
-                "Background gene set", bg_mapper.keys(), label_visibility="collapsed"
+                "Background gene set", state.bg_mapper.keys(), label_visibility="collapsed"
             )
 
             st.caption(
@@ -294,18 +309,18 @@ def main() -> None:
             st.write("Select libraries")
             libraries = st.multiselect(
                 "MSigDB C5 (ontology gene sets)",
-                lib_mapper.keys(),
-                default=[list(lib_mapper.keys())[0]],
+                state.lib_mapper.keys(),
+                default=[list(state.lib_mapper.keys())[0]],
             )
 
             state.gene_set_libraries = [
                 GeneSetLibrary(
-                    str(ROOT / "data" / "libraries" / lib_mapper[library]), name=library
+                    str(ROOT / "data" / "libraries" / state.lib_mapper[library]), name=library
                 )
                 for library in libraries
             ]
             state.background_gene_set = BackgroundGeneSet(
-                str(ROOT / "data" / "backgrounds" / bg_mapper[background_set])
+                str(ROOT / "data" / "backgrounds" / state.bg_mapper[background_set])
             )
 
         submit, example, placeholder = st.columns([2, 2, 8])
@@ -317,7 +332,7 @@ def main() -> None:
         with example:
             st.button("Input an example", on_click=input_example)
     with advanced_settings:
-        st.slider(
+        n_results = st.slider(
             "Number of results to display", min_value=1, max_value=100, value=10, step=1
         )
         p_val_method = st.selectbox(
@@ -328,17 +343,25 @@ def main() -> None:
         if bg_custom is not None:
             bg_file = (ROOT / "data" / "backgrounds" / bg_custom.name).open("wb")
             bg_file.write(bg_custom.getvalue())
+            state.advanced_settings_changed = True
 
         libs_custom = st.file_uploader(
-            "Upload gene set libraries", type=[".gmt"], accept_multiple_files=True
+            "Upload gene set libraries", type=[".gmt"], accept_multiple_files=True, on_change=update_aliases, args=("libraries", )
         )
         for lib_custom in libs_custom:
             lib_file = (ROOT / "data" / "libraries" / lib_custom.name).open("wb")
             lib_file.write(lib_custom.getvalue())
+            state.advanced_settings_changed = True
+
+        if state.advanced_settings_changed:
+            if st.button("Apply settings"):
+                st.success("Settings applied")
+        else:
+            with st.empty():
+                st.button("Apply settings", disabled=True)
 
     if bt_submit:
         render_validation()
-        # if (state.gene_set_input) and (True in go_libraries.values()):
         if state.gene_set_input:
             n_genes = len(state.gene_set_input.split("\n"))
             if (n_genes <= 10) or (n_genes >= 5000):
@@ -369,14 +392,18 @@ Estimates for the number of DEGs based on comparison type:
         else:
             if not state.gene_set_input:
                 st.error("Please input a newline separated set of genes")
-            # if not (True in go_libraries.values()):
-            #     st.error("No libraries were selected for the analysis")
+            if not state.gene_set_libraries:
+                st.error("No libraries were selected for the analysis")
 
     if state.results_ready:
         st.divider()
+        st.markdown(
+            f'Download all results as {download_link(collect_results(state.enrich), "results", "tsv")}',
+            unsafe_allow_html=True,
+        )
         for library_name in state.enrich.keys():
             st.subheader(library_name)
-            render_results(state.enrich[library_name], library_name)
+            render_results(state.enrich[library_name], library_name, n_results)
 
     return
 
