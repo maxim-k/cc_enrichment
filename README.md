@@ -7,5 +7,5 @@
 - `alias.json` files provides human-readable names for gene set libraries and background gene sets.
 
 ## Run the App
-- To run locally, use `stramlit run code/stramlit.app`
+- To run locally, use `streamlit run code/stramlit.app`
 - To run on CodeOcean, click the Streamlit icon on the Cloud Workstation dashboard.
