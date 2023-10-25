@@ -6,7 +6,7 @@ class GeneSet:
     """
     Class for storing a gene set from a gene list.
     """
-    with open(Path.cwd() / 'data' / 'backgrounds' / 'hgnc_symbols_2023-01-01.txt', 'r') as f:
+    with open(Path(__file__).resolve().parent.parent / 'data' / 'backgrounds' / 'hgnc_symbols_2023-01-01.txt', 'r') as f:
         hgnc_symbols: Set[str] = set(line.strip() for line in f)
 
     def __init__(self, gene_list: List[str], name: str = "", hgcn: bool = True, format: bool = True) -> None:
