@@ -14,7 +14,7 @@ from gene_set_library import GeneSetLibrary
 from PIL import Image
 from streamlit import session_state as state
 
-ROOT = Path.cwd()
+ROOT = Path(__file__).resolve().parent.parent
 
 st.set_page_config(
     page_title="Enrichment Analysis", layout="wide", initial_sidebar_state="expanded"
