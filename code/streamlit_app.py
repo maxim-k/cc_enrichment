@@ -1,5 +1,6 @@
 import base64
 import json
+import logging
 from math import log10
 from typing import Dict
 from pathlib import Path
@@ -14,6 +15,8 @@ from gene_set_library import GeneSetLibrary
 from PIL import Image
 from streamlit import session_state as state
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
 ROOT = Path(__file__).resolve().parent.parent
 
 st.set_page_config(
@@ -34,6 +37,7 @@ def update_aliases(directory: str, alias_file: str = "alias.json") -> Dict[str, 
     :param alias_file: The name of the alias file, defaults to 'alias.json'
     :return: A dictionary containing the aliases, with keys being the simplified names and values being the actual file names.
     """
+    logger.info(f"Updating aliases for directory: {directory}")
     aliases_path = ROOT / "data" / directory / alias_file
 
     if Path(aliases_path).is_file():
@@ -41,6 +45,7 @@ def update_aliases(directory: str, alias_file: str = "alias.json") -> Dict[str, 
             with open(aliases_path, "r") as file:
                 alias = json.load(file)
         except (FileNotFoundError, json.JSONDecodeError):
+            logger.warning(f"Failed to load aliases from {aliases_path}")
             st.warning(f"Failed to load aliases from {aliases_path}")
 
     files = [
@@ -81,6 +86,7 @@ def render_table(result: pd.DataFrame) -> None:
     :param result: The DataFrame containing results data to display.
     """
 
+    logger.info("Rendering DataFrame in Streamlit app.")
     def custom_format(n):
         if n > 0.001:
             return f"{n:.3f}"
@@ -111,6 +117,7 @@ def render_barchart(result: pd.DataFrame) -> None:
 
     :param result: The DataFrame containing results data to visualize.
     """
+    logger.info("Rendering bar chart in Streamlit app.")
     bar = result[["term", "p-value"]]
     bar.loc[:, "p-value"] = bar.loc[:, "p-value"].apply(lambda x: -1 * log10(x))
     bar = bar.sort_values(by=["p-value"])
@@ -138,6 +145,7 @@ def download_link(val: str, filename: str, extension: str) -> str:
     :param extension: The file extension (e.g., 'tsv', 'json').
     :return: An HTML string containing the download link.
     """
+    logger.info(f"Creating download link for file: {filename}.{extension}")
     b64 = base64.b64encode(val.encode("utf-8"))
     return f'<a href="data:application/octet-stream;base64,{b64.decode()}" download="{filename}.{extension}">{extension}</a>'
 
@@ -148,6 +156,7 @@ def collect_results(results: Dict) -> str:
 
     :param results: The dictionary containing enrichment results.
     """
+    logger.info("Concatenating all enrichment results.")
     results_concat = []
     for library_name in results.keys():
         result = results[library_name].to_dataframe()
@@ -169,6 +178,7 @@ def render_results(result: Enrichment, file_name: str, n_results: int = 10) -> N
     :param file_name: The name of the file to be used for downloading results.
     :param n_results: Numbers of results to display
     """
+    logger.info(f"Rendering results for file: {file_name}")
     result_df = result.to_dataframe().head(n_results)
     result_df = result_df.set_index("rank")
     table, bar = st.tabs(["Results", "Bar chart"])
@@ -190,6 +200,7 @@ def render_validation() -> None:
     This function checks the `gene_set` in the session state for duplicates and invalid entries.
     It then provides a feedback to the user in the Streamlit app on the validation results.
     """
+    logger.info("Validating and rendering the gene set information.")
     if "gene_set" in state:
         total = state.gene_set.size
         dups = len(state.gene_set.validation["duplicates"])
@@ -234,6 +245,7 @@ def input_example() -> None:
     This function loads the example gene set and populates the `gene_set_input` and
     `gene_set_name` in the session state with the content and name of the example respectively.
     """
+    logger.info("Setting the example input for the Streamlit app.")
     # Callback because that's the only way it works
     state.gene_set_input = (ROOT / "code" / "static" / "example_gene_list.txt").read_text()
     state.gene_set_name = "Example gene set"
@@ -247,7 +259,7 @@ def main() -> None:
     and displays results. It uses various Streamlit components (e.g., st.button, st.dataframe) to
     interact with the user and present information.
     """
-
+    logger.info("Starting the Streamlit app")
     st.sidebar.image(
         Image.open(f"{ROOT}/code/static/CO_logo_135x72.png"), caption="Code Ocean"
     )
@@ -355,6 +367,7 @@ def main() -> None:
                 st.button("Apply settings", disabled=True)
 
     if bt_submit:
+        logger.info("Validating and submitting genes for enrichment analysis")
         render_validation()
         if state.gene_set_input:
             n_genes = len(state.gene_set_input.split("\n"))
@@ -372,6 +385,7 @@ Estimates for the number of DEGs based on comparison type:
 - Highly Different Conditions (e.g., healthy vs. cancerous tissue): Several thousand DEGs."""
                 )
             with st.spinner("Calculating enrichment"):
+                logger.info("Calculating enrichment for the submitted genes")
                 for gene_set_library in state.gene_set_libraries:
                     enrich = Enrichment(
                         state.gene_set,
@@ -390,6 +404,7 @@ Estimates for the number of DEGs based on comparison type:
                 st.error("No libraries were selected for the analysis")
 
     if state.results_ready:
+        logger.info("Displaying enrichment results")
         st.divider()
         st.markdown(
             f'Download all results as {download_link(collect_results(state.enrich), "results", "tsv")}',
@@ -398,7 +413,7 @@ Estimates for the number of DEGs based on comparison type:
         for library_name in state.enrich.keys():
             st.subheader(library_name)
             render_results(state.enrich[library_name], library_name, n_results)
-
+    logger.info("Ending the Streamlit app")
     return
 
 
