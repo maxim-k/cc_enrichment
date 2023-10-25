@@ -317,7 +317,7 @@ def main() -> None:
                             state.gene_set_input.split(), state.background_gene_set.genes, state.gene_set_name
                         )
 
-        submit, example, placeholder = st.columns([3, 3, 10])
+        submit, example, placeholder = st.columns([8, 8, 30])
         with submit:
             bt_submit = st.button(
                 "Validate and submit", disabled=state.bt_submit_disabled
