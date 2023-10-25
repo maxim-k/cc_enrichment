@@ -247,7 +247,6 @@ def main() -> None:
     and displays results. It uses various Streamlit components (e.g., st.button, st.dataframe) to
     interact with the user and present information.
     """
-    state.bt_submit_disabled = True
 
     st.sidebar.image(
         Image.open(f"{ROOT}/code/static/CO_logo_135x72.png"), caption="Code Ocean"
@@ -266,6 +265,7 @@ def main() -> None:
     state.lib_mapper = update_aliases("libraries")
     state.bg_mapper = update_aliases("backgrounds")
     state.advanced_settings_changed = False
+    state.bt_submit_disabled = True
 
     analysis, advanced_settings = st.tabs(["Analysis", "Advanced settings"])
 
@@ -300,7 +300,7 @@ def main() -> None:
             state.libraries = st.multiselect(
                 "MSigDB C5 (ontology gene sets)",
                 state.lib_mapper.keys(),
-                default=[list(state.lib_mapper.keys())[0]],
+                default=None,
             )
 
             if ("libraries" in state) and ("lib_mapper" in state):
