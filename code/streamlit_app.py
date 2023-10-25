@@ -303,7 +303,7 @@ def main() -> None:
                 default=[list(state.lib_mapper.keys())[0]],
             )
 
-            if "libraries" in state:
+            if ("libraries" in state) and ("lib_mapper" in state):
                 state.gene_set_libraries = [
                     GeneSetLibrary(
                         str(ROOT / "data" / "libraries" / state.lib_mapper[library]), name=library
@@ -311,7 +311,7 @@ def main() -> None:
                     for library in state.libraries
                 ]
 
-            if "background_set" in state:
+            if ("background_set" in state) and ("bg_mapper" in state):
                 state.background_gene_set = BackgroundGeneSet(
                     str(ROOT / "data" / "backgrounds" / state.bg_mapper[state.background_set])
                 )
