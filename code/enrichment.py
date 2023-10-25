@@ -14,13 +14,6 @@ from gene_set_library import GeneSetLibrary
 from background_gene_set import BackgroundGeneSet
 
 
-# Hypergeometrical test
-#
-# M, n, N = 100, 10, 5  # Example values
-# rv = hypergeom(M, n, N)
-# p_value = rv.sf(k - 1)
-
-
 def compute_pvalue(args: Tuple[GeneSet, BackgroundGeneSet, dict, str]) -> Tuple[str, str, str, List[str], float]:
     """
     Computes the p-value for a given term using Fisher's exact test.
