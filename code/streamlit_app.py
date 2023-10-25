@@ -287,18 +287,13 @@ def main() -> None:
             )
 
         with settings:
-            st.write("Background gene set")
-            state.background_set = st.selectbox(
-                "Background gene set", state.bg_mapper.keys(), label_visibility="collapsed"
-            )
-
+            state.background_set = st.selectbox("Background gene set", state.bg_mapper.keys())
             st.caption(
                 "Specifies the background set of genes. This set validates the input gene set against the chosen organism's genes and serves as a reference for p-value calculations."
             )
-            st.divider()
-            st.write("Select libraries")
+
             state.libraries = st.multiselect(
-                "MSigDB C5 (ontology gene sets)",
+                "Select libraries",
                 state.lib_mapper.keys(),
                 default=None,
             )
@@ -322,7 +317,7 @@ def main() -> None:
                             state.gene_set_input.split(), state.background_gene_set.genes, state.gene_set_name
                         )
 
-        submit, example, placeholder = st.columns([2, 2, 8])
+        submit, example, placeholder = st.columns([3, 3, 10])
         with submit:
             bt_submit = st.button(
                 "Validate and submit", disabled=state.bt_submit_disabled
