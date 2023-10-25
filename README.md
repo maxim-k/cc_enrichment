@@ -6,5 +6,6 @@
 - `alias.json` files provides human-readable names for gene set libraries and background gene sets.
 
 ## Run the App
-- To run locally, use `streamlit run code/stramlit.app`
+- To run locally, use `streamlit run code/streamlit.app`
+- To run in Docker use `docker build -t co_gsea:latest .` and `docker run -p 8501:8501 co_gsea:latest`
 - To run on CodeOcean, click the Streamlit icon on the Cloud Workstation dashboard.

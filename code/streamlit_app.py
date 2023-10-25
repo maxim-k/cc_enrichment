@@ -295,7 +295,7 @@ def main() -> None:
 
         with settings:
             st.write("Background gene set")
-            background_set = st.selectbox(
+            state.background_set = st.selectbox(
                 "Background gene set", state.bg_mapper.keys(), label_visibility="collapsed"
             )
 
@@ -304,21 +304,24 @@ def main() -> None:
             )
             st.divider()
             st.write("Select libraries")
-            libraries = st.multiselect(
+            state.libraries = st.multiselect(
                 "MSigDB C5 (ontology gene sets)",
                 state.lib_mapper.keys(),
                 default=[list(state.lib_mapper.keys())[0]],
             )
 
-            state.gene_set_libraries = [
-                GeneSetLibrary(
-                    str(ROOT / "data" / "libraries" / state.lib_mapper[library]), name=library
+            if state.libraries:
+                state.gene_set_libraries = [
+                    GeneSetLibrary(
+                        str(ROOT / "data" / "libraries" / state.lib_mapper[library]), name=library
+                    )
+                    for library in state.libraries
+                ]
+
+            if state.background_set:
+                state.background_gene_set = BackgroundGeneSet(
+                    str(ROOT / "data" / "backgrounds" / state.bg_mapper[state.background_set])
                 )
-                for library in libraries
-            ]
-            state.background_gene_set = BackgroundGeneSet(
-                str(ROOT / "data" / "backgrounds" / state.bg_mapper[background_set])
-            )
 
         submit, example, placeholder = st.columns([2, 2, 8])
         with submit:
