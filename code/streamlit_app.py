@@ -14,7 +14,7 @@ from gene_set_library import GeneSetLibrary
 from PIL import Image
 from streamlit import session_state as state
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path.cwd()
 
 st.set_page_config(
     page_title="Enrichment Analysis", layout="wide", initial_sidebar_state="expanded"
@@ -286,13 +286,6 @@ def main() -> None:
                 label_visibility="collapsed",
             )
 
-            if "gene_set_input" in state:
-                state.bt_submit_disabled = False
-                if state.gene_set_input:
-                    state.gene_set = GeneSet(
-                        state.gene_set_input.split(), state.gene_set_name
-                    )
-
         with settings:
             st.write("Background gene set")
             state.background_set = st.selectbox(
@@ -310,7 +303,7 @@ def main() -> None:
                 default=[list(state.lib_mapper.keys())[0]],
             )
 
-            if state.libraries:
+            if "libraries" in state:
                 state.gene_set_libraries = [
                     GeneSetLibrary(
                         str(ROOT / "data" / "libraries" / state.lib_mapper[library]), name=library
@@ -318,10 +311,16 @@ def main() -> None:
                     for library in state.libraries
                 ]
 
-            if state.background_set:
+            if "background_set" in state:
                 state.background_gene_set = BackgroundGeneSet(
                     str(ROOT / "data" / "backgrounds" / state.bg_mapper[state.background_set])
                 )
+                if "gene_set_input" in state:
+                    state.bt_submit_disabled = False
+                    if state.gene_set_input:
+                        state.gene_set = GeneSet(
+                            state.gene_set_input.split(), state.background_gene_set.genes, state.gene_set_name
+                        )
 
         submit, example, placeholder = st.columns([2, 2, 8])
         with submit:
