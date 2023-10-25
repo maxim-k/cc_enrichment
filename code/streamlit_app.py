@@ -9,15 +9,13 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 from background_gene_set import BackgroundGeneSet
-from dotenv import load_dotenv
 from enrichment import Enrichment
 from gene_set import GeneSet
 from gene_set_library import GeneSetLibrary
 from PIL import Image
 from streamlit import session_state as state
 
-load_dotenv()
-ROOT = Path(os.getenv("ROOT") or ".")
+ROOT = Path(os.getcwd())
 
 st.set_page_config(
     page_title="Enrichment Analysis", layout="wide", initial_sidebar_state="expanded"
