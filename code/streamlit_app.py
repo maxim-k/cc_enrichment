@@ -1,6 +1,5 @@
 import base64
 import json
-import os
 from math import log10
 from typing import Dict
 from pathlib import Path
@@ -15,7 +14,7 @@ from gene_set_library import GeneSetLibrary
 from PIL import Image
 from streamlit import session_state as state
 
-ROOT = Path(os.getcwd())
+ROOT = Path.cwd()
 
 st.set_page_config(
     page_title="Enrichment Analysis", layout="wide", initial_sidebar_state="expanded"
