@@ -1,5 +1,8 @@
 from typing import List, Set, Dict
-
+import logging
+from pprint import pformat
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
 
 class GeneSet:
     """
@@ -18,7 +21,7 @@ class GeneSet:
         self.genes: Set[str] = set()
         self.name: str = name
         self.size: int = 0
-        self.validation: Dict[set[str]: set[str]] = {'duplicates': set(), 'non_hgnc': set()}
+        self.validation: Dict[set[str]: set[str]] = {'duplicates': set(), 'non_valid': set()}
         self.validation_set: Set = validation_set
 
         if format:
@@ -28,11 +31,16 @@ class GeneSet:
             if gene in self.genes:
                 self.validation['duplicates'].add(gene)
             elif hgcn and gene not in self.validation_set:
-                self.validation['non_hgnc'].add(gene)
+                self.validation['non_valid'].add(gene)
             else:
                 self.genes.add(gene)
 
         self.size = len(self.genes)
+        logger.info(f"Input Gene Set\n{self.name}\n\t{self.size} genes")
+        if self.validation['duplicates']:
+            logger.warning(f"{len(self.validation['duplicates'])} duplicates")
+        if self.validation['non_valid']:
+            logger.warning(f"{len(self.validation['non_valid'])} non valid")
 
     def has_gene(self, gene: str) -> bool:
         """

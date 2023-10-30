@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
 import multiprocessing as mp
+import logging
 
 import pandas as pd
 
@@ -13,6 +14,8 @@ from gene_set import GeneSet
 from gene_set_library import GeneSetLibrary
 from background_gene_set import BackgroundGeneSet
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
 
 def compute_pvalue(args: Tuple[GeneSet, BackgroundGeneSet, dict, str]) -> Tuple[str, str, str, List[str], float]:
     """
@@ -110,6 +113,8 @@ class Enrichment:
             A list containing dictionaries of enrichment results
         """
         results = []
+        logger.info(f"The number of CPUs in the system: {mp.cpu_count()}")
+        logger.info(f"Calculating p-values for {self.gene_set_library.name}")
         with mp.Pool(mp.cpu_count()) as pool:
             parallel_results = pool.map(compute_pvalue,
                                         [(self.gene_set, self.background_gene_set, term, self.p_value_method_name) for

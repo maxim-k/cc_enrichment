@@ -75,7 +75,7 @@ def update_aliases(directory: str, alias_file: str = "alias.json") -> Dict[str, 
 
     with open(aliases_path, "w") as file:
         json.dump(alias, file, indent=4)
-    logger.info(f"{directory}/alias.json: {pformat(alias, indent=4)}")
+    logger.info(f"{directory}/alias.json\n{pformat(alias, indent=4)}")
     return alias
 
 
@@ -210,7 +210,7 @@ def render_validation() -> None:
     if "gene_set" in state:
         total = state.gene_set.size
         dups = len(state.gene_set.validation["duplicates"])
-        non_gene = len(state.gene_set.validation["non_hgnc"])
+        non_gene = len(state.gene_set.validation["non_valid"])
         if dups:
             dups_st = f", ⚠️ {dups} duplicates"
         else:
@@ -220,7 +220,6 @@ def render_validation() -> None:
         else:
             non_gene_st = ""
         caption = f"{total} genes{dups_st}{non_gene_st}"
-        logger.info(caption)
         with st.expander(caption):
             if dups:
                 st.data_editor(
@@ -234,9 +233,9 @@ def render_validation() -> None:
                 )
             if non_gene:
                 st.data_editor(
-                    pd.json_normalize(state.gene_set.validation)["non_hgnc"],
+                    pd.json_normalize(state.gene_set.validation)["non_valid"],
                     column_config={
-                        "non_hgnc": st.column_config.ListColumn(
+                        "non_valid": st.column_config.ListColumn(
                             non_gene_st[2:], width="large"
                         ),
                     },

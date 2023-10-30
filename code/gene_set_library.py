@@ -1,5 +1,8 @@
 from typing import List, Dict, Set
 from pathlib import Path
+import logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
 
 
 class GeneSetLibrary:
@@ -19,6 +22,7 @@ class GeneSetLibrary:
         self.size = len(self.unique_genes)
         self.name = name if name else Path(gmt_file_path).stem
         self.organism = organism
+        logging.info(f"Gene Set Library\n{self.name} ({self.organism})\n\t{self.num_terms} terms\n\t{self.size} genes")
 
     def _load_from_gmt(self, gmt_file_path: str) -> List[Dict[str, List[str]]]:
         """
