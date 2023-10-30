@@ -74,7 +74,7 @@ def update_aliases(directory: str, alias_file: str = "alias.json") -> Dict[str, 
         del alias[key]
 
     with open(aliases_path, "w") as file:
-        json.dump(alias, file)
+        json.dump(alias, file, indent=4)
     logger.info(f"{directory}/alias.json\n{pformat(alias)}")
     return alias
 
