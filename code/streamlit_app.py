@@ -185,6 +185,8 @@ def render_results(result: Enrichment, file_name: str, n_results: int = 10) -> N
     logger.info(f"Rendering results for file: {file_name}")
     result_df = result.to_dataframe().head(n_results)
     result_df = result_df.set_index("rank")
+    st.divider()
+    st.subheader(file_name)
     table, bar = st.tabs(["Results", "Bar chart"])
     with table:
         render_table(result_df)
@@ -416,13 +418,11 @@ Estimates for the number of DEGs based on comparison type:
 
     if state.results_ready:
         logger.info("Displaying enrichment results")
-        st.divider()
         st.markdown(
             f'Download all results as {download_link(collect_results(state.enrich), "results", "tsv")}',
             unsafe_allow_html=True,
         )
         for library_name in state.enrich.keys():
-            st.subheader(library_name)
             render_results(state.enrich[library_name], library_name, n_results)
     logger.info("Ending the Streamlit app")
     return
