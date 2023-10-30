@@ -1,4 +1,4 @@
-# hash:sha256:c1d7551e39e7a24a0f9289aa5170b615918a57420a2c57401e7b049cdf5274fc
+# hash:sha256:c5cc8db686bc3896ef19a194241a2c2b540184f02f5581c57d49b72b8b34d0a7
 FROM registry.apps.codeocean.com/codeocean/mambaforge3:22.11.1-4-ubuntu22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -14,4 +14,4 @@ RUN pip3 install -U --no-cache-dir \
     python-dotenv==1.0.0 \
     scipy==1.11.2 \
     statsmodels==0.14.0 \
-    streamlit==1.26.0
+    streamlit==1.27.0
