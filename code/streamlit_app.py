@@ -4,6 +4,8 @@ import logging
 from math import log10
 from typing import Dict
 from pathlib import Path
+from pprint import pformat
+
 import sys
 sys.dont_write_bytecode = True
 
@@ -73,7 +75,7 @@ def update_aliases(directory: str, alias_file: str = "alias.json") -> Dict[str, 
 
     with open(aliases_path, "w") as file:
         json.dump(alias, file, indent=4)
-
+    logger.info(f"{directory}/alias.json: {pformat(alias, indent=4)}")
     return alias
 
 
@@ -197,12 +199,12 @@ def render_results(result: Enrichment, file_name: str, n_results: int = 10) -> N
 
 def render_validation() -> None:
     """
-    Validate and render the gene set information.
+    Validate and render the input gene set information.
 
     This function checks the `gene_set` in the session state for duplicates and invalid entries.
     It then provides a feedback to the user in the Streamlit app on the validation results.
     """
-    logger.info("Validating and rendering the gene set information.")
+    logger.info("Validating and rendering the input gene set information.")
     if "gene_set" in state:
         total = state.gene_set.size
         dups = len(state.gene_set.validation["duplicates"])
@@ -216,6 +218,7 @@ def render_validation() -> None:
         else:
             non_gene_st = ""
         caption = f"{total} genes{dups_st}{non_gene_st}"
+        logger.info(caption)
         with st.expander(caption):
             if dups:
                 st.data_editor(
@@ -363,6 +366,7 @@ def main() -> None:
 
         if state.advanced_settings_changed:
             if st.button("Apply settings"):
+                logger.info("Running with custom settings")
                 st.success("Settings applied")
         else:
             with st.empty():
@@ -373,12 +377,13 @@ def main() -> None:
         render_validation()
         if state.gene_set_input:
             n_genes = len(state.gene_set_input.split("\n"))
-            if (n_genes <= 10) or (n_genes >= 5000):
+            if (n_genes <= 100) or (n_genes >= 5000):
                 if n_genes <= 100:
                     n_warn = "small"
                 elif n_genes >= 2000:
                     n_warn = "big"
                 s = "s" if str(n_genes)[-1] != 1 else ""
+                logger.warning("You've entered {n_genes} gene{s}, which may be {n_warn} and could affect result accuracy.")
                 st.warning(
                     f"""You've entered {n_genes} gene{s}, which may be {n_warn} and could affect result accuracy. Consider adjusting p-value or log2 Fold Change.  
 Estimates for the number of DEGs based on comparison type:
@@ -397,12 +402,16 @@ Estimates for the number of DEGs based on comparison type:
                     )
                     state.enrich[gene_set_library.name] = enrich
                     with (ROOT / "results" / f"{enrich.name}.json").open("w") as results_snapshot:
+                        logger.info(f"Saving {enrich.name}.json")
                         json.dump(enrich.to_snapshot(), results_snapshot)
+                logger.info(f"Enrichment results for {gene_set_library.name} are ready")
                 state.results_ready = True
         else:
             if not state.gene_set_input:
+                logger.error("Please input a newline separated set of genes")
                 st.error("Please input a newline separated set of genes")
             if not state.gene_set_libraries:
+                logger.error("No libraries were selected for the analysis")
                 st.error("No libraries were selected for the analysis")
 
     if state.results_ready:
