@@ -157,7 +157,7 @@ class Enrichment:
 
     def to_json(self):
         """Return the enrichment results as a JSON string."""
-        return json.dumps(self.results, indent=4, separators=(',', ': '))
+        return json.dumps(self.results, separators=(',', ': '))
 
     def to_html(self):
         """Return the enrichment results as an HTML page."""
