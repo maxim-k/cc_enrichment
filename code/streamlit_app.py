@@ -4,6 +4,8 @@ import logging
 from math import log10
 from typing import Dict
 from pathlib import Path
+import sys
+sys.dont_write_bytecode = True
 
 import pandas as pd
 import plotly.express as px
