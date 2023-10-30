@@ -313,7 +313,7 @@ def main() -> None:
             state.libraries = st.multiselect(
                 "Select libraries",
                 state.lib_mapper.keys(),
-                default=None,
+                default=[list(state.lib_mapper.keys())[0]]
             )
 
             if ("libraries" in state) and ("lib_mapper" in state):
