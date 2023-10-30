@@ -1,1 +1,5 @@
-{"GO Biological Process": "c5.go.bp.v2023.1.Hs.symbols.gmt", "GO Cellular Component": "c5.go.cc.v2023.1.Hs.symbols.gmt", "GO Molecular Function": "c5.go.mf.v2023.1.Hs.symbols.gmt"}
+{
+    "GO Biological Process": "c5.go.bp.v2023.1.Hs.symbols.gmt",
+    "GO Cellular Component": "c5.go.cc.v2023.1.Hs.symbols.gmt",
+    "GO Molecular Function": "c5.go.mf.v2023.1.Hs.symbols.gmt"
+}
