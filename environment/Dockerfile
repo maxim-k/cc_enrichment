@@ -1,4 +1,4 @@
-# hash:sha256:49116b54c919f18a9e8f2015edfa85c69d2a083201879b72fc1342c30953310e
+# hash:sha256:9ce9b4493db94a9eb39ec5171a8f60067a337330a6097a7541345b283089d6f2
 FROM registry.apps.codeocean.com/codeocean/mambaforge3:22.11.1-4-ubuntu22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -10,7 +10,7 @@ COPY git-askpass /
 RUN pip3 install -U --no-cache-dir \
     pandas==2.0.3 \
     pillow==9.5.0 \
-    plotly \
+    plotly==5.18.0 \
     scipy==1.11.2 \
     statsmodels==0.14.0 \
     streamlit==1.27.0
