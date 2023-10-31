@@ -40,6 +40,7 @@ def compute_pvalue(args: Tuple[GeneSet, BackgroundGeneSet, dict, str]) -> Tuple[
             - p_value (float): The p-value computed by Fisher's exact test
     """
     gene_set, background_gene_set, term, p_value_method_name = args
+    logger.info(f"{term['name']}: computing p-value")
     term_genes = set(term['genes'])
     n_term_genes = len(term_genes)
     overlap = gene_set.genes & term_genes
@@ -58,8 +59,9 @@ def compute_pvalue(args: Tuple[GeneSet, BackgroundGeneSet, dict, str]) -> Tuple[
     elif p_value_method_name == "Hypergeometric Test":
         p_value = hypergeom.sf(n_overlap - 1, background_gene_set.size, n_term_genes, gene_set.size)
     else:
+        logger.error(f"Unsupported p_value_method: {p_value_method_name}")
         raise ValueError(f"Unsupported p_value_method: {p_value_method_name}")
-
+    logger.info(f"{term['name']}: done")
     return term['name'], f'{len(overlap)}/{len(term["genes"])}', term['description'], sorted(list(overlap)), p_value
 
 
@@ -113,13 +115,14 @@ class Enrichment:
             A list containing dictionaries of enrichment results
         """
         results = []
-        logger.info(f"The number of CPUs in the system: {mp.cpu_count()}")
         logger.info(f"Calculating p-values for {self.gene_set_library.name}")
         with mp.Pool(mp.cpu_count()) as pool:
+            logger.info(f"Initializing the MP pool with {mp.cpu_count()} CPUs")
             parallel_results = pool.map(compute_pvalue,
                                         [(self.gene_set, self.background_gene_set, term, self.p_value_method_name) for
                                          term in
                                          self.gene_set_library.library])
+            logger.info(f"Releasing {mp.cpu_count()} CPUs from the MP pool")
 
         # Separate results and p_values for convenience
         p_values = [result[-1] for result in parallel_results]
