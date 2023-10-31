@@ -329,8 +329,8 @@ def main() -> None:
                     str(ROOT / "data" / "backgrounds" / state.bg_mapper[state.background_set])
                 )
                 if "gene_set_input" in state:
-                    state.bt_submit_disabled = False
                     if state.gene_set_input:
+                        state.bt_submit_disabled = False
                         state.gene_set = GeneSet(
                             state.gene_set_input.split(), state.background_gene_set.genes, state.gene_set_name
                         )
@@ -347,20 +347,23 @@ def main() -> None:
         n_results = st.slider(
             "Number of results to display", min_value=1, max_value=100, value=10, step=1
         )
-        p_val_method = st.selectbox(
+        state.p_val_method = st.selectbox(
             "P-value calculation method",
             options=["Fisher's Exact Test", "Hypergeometric Test", "Chi-squared Test"],
         )
-        bg_custom = st.file_uploader("Upload your background gene set", type=[".txt"])
-        if bg_custom is not None:
-            bg_file = (ROOT / "data" / "backgrounds" / bg_custom.name).open("wb")
-            bg_file.write(bg_custom.getvalue())
+        if state.p_val_method != "Fisher's Exact Test":
             state.advanced_settings_changed = True
 
-        libs_custom = st.file_uploader(
+        state.bg_custom = st.file_uploader("Upload your background gene set", type=[".txt"])
+        if state.bg_custom is not None:
+            bg_file = (ROOT / "data" / "backgrounds" / state.bg_custom.name).open("wb")
+            bg_file.write(state.bg_custom.getvalue())
+            state.advanced_settings_changed = True
+
+        state.libs_custom = st.file_uploader(
             "Upload gene set libraries", type=[".gmt"], accept_multiple_files=True, on_change=update_aliases, args=("libraries", )
         )
-        for lib_custom in libs_custom:
+        for lib_custom in state.libs_custom:
             lib_file = (ROOT / "data" / "libraries" / lib_custom.name).open("wb")
             lib_file.write(lib_custom.getvalue())
             state.advanced_settings_changed = True
@@ -399,7 +402,7 @@ Estimates for the number of DEGs based on comparison type:
                         state.gene_set,
                         gene_set_library,
                         state.background_gene_set,
-                        p_val_method,
+                        state.p_val_method,
                     )
                     state.enrich[gene_set_library.name] = enrich
                     with (ROOT / "results" / f"{enrich.name}.json").open("w") as results_snapshot:
