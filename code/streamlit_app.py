@@ -393,8 +393,8 @@ Estimates for the number of DEGs based on comparison type:
 - Highly Different Conditions (e.g., healthy vs. cancerous tissue): Several thousand DEGs."""
                 )
             with st.spinner("Calculating enrichment"):
-                logger.info("Calculating enrichment for the submitted genes")
                 for gene_set_library in state.gene_set_libraries:
+                    logger.info(f"Calculating enrichment results for {gene_set_library.name}")
                     enrich = Enrichment(
                         state.gene_set,
                         gene_set_library,
@@ -423,7 +423,9 @@ Estimates for the number of DEGs based on comparison type:
         )
         for library_name in state.enrich.keys():
             render_results(state.enrich[library_name], library_name, n_results)
-    logger.info("Ending the Streamlit app")
+        state.results_ready = False
+
+    logger.info("Finishing the Streamlit app")
     return
 
 
