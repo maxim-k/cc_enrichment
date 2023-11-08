@@ -40,7 +40,7 @@ def compute_pvalue(args: Tuple[GeneSet, BackgroundGeneSet, dict, str]) -> Tuple[
             - p_value (float): The p-value computed by Fisher's exact test
     """
     gene_set, background_gene_set, term, p_value_method_name = args
-    logger.info(f"{term['name']}: computing p-value")
+    logger.debug(f"{term['name']}: computing p-value")
     term_genes = set(term['genes'])
     n_term_genes = len(term_genes)
     overlap = gene_set.genes & term_genes
@@ -61,7 +61,7 @@ def compute_pvalue(args: Tuple[GeneSet, BackgroundGeneSet, dict, str]) -> Tuple[
     else:
         logger.error(f"Unsupported p_value_method: {p_value_method_name}")
         raise ValueError(f"Unsupported p_value_method: {p_value_method_name}")
-    logger.info(f"{term['name']}: done")
+    logger.debug(f"{term['name']}: done")
     return term['name'], f'{len(overlap)}/{len(term["genes"])}', term['description'], sorted(list(overlap)), p_value
 
 
@@ -123,18 +123,20 @@ class Enrichment:
                                          term in
                                          self.gene_set_library.library])
             logger.info(f"Releasing {mp.cpu_count()} CPUs from the MP pool")
-
+        logger.debug("p_values = [result[-1] for result in parallel_results]")
         # Separate results and p_values for convenience
         p_values = [result[-1] for result in parallel_results]
-
+        logger.debug("_, p_values_adjusted, _, _ = multipletests(p_values, method='fdr_bh')")
         # Adjust p-values for multiple testing
         _, p_values_adjusted, _, _ = multipletests(p_values, method='fdr_bh')
-
+        logger.debug("ranked_terms = sorted(list(enumerate(parallel_results)), key=lambda x: p_values[x[0]])")
         # Rank terms based on their p-values
         ranked_terms = sorted(list(enumerate(parallel_results)), key=lambda x: p_values[x[0]])
 
         # Format results into a sorted list
+        logger.debug("for i, result in ranked_terms:")
         for i, result in ranked_terms:
+            logger.debug(f"{i}\t\t{result}")
             term_name, overlap_size, term_description, overlap_genes, _ = result
             results.append({
                 'term': term_name,
@@ -145,7 +147,7 @@ class Enrichment:
                 'p-value': p_values[i],
                 'fdr': p_values_adjusted[i]
             })
-
+        logger.debug("return results")
         return results
 
     def to_dataframe(self):
