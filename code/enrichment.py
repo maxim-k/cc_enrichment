@@ -14,8 +14,9 @@ from gene_set import GeneSet
 from gene_set_library import GeneSetLibrary
 from background_gene_set import BackgroundGeneSet
 
-logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
 
 def compute_pvalue(args: Tuple[GeneSet, BackgroundGeneSet, dict, str]) -> Tuple[str, str, str, List[str], float]:
     """
@@ -40,7 +41,6 @@ def compute_pvalue(args: Tuple[GeneSet, BackgroundGeneSet, dict, str]) -> Tuple[
             - p_value (float): The p-value computed by Fisher's exact test
     """
     gene_set, background_gene_set, term, p_value_method_name = args
-    # logger.info(f"DEBUG: {term['name']}: computing p-value")
     term_genes = set(term['genes'])
     n_term_genes = len(term_genes)
     overlap = gene_set.genes & term_genes
@@ -61,7 +61,6 @@ def compute_pvalue(args: Tuple[GeneSet, BackgroundGeneSet, dict, str]) -> Tuple[
     else:
         logger.error(f"Unsupported p_value_method: {p_value_method_name}")
         raise ValueError(f"Unsupported p_value_method: {p_value_method_name}")
-    # logger.info(f"DEBUG: {term['name']}: done")
     return term['name'], f'{len(overlap)}/{len(term["genes"])}', term['description'], sorted(list(overlap)), p_value
 
 
@@ -121,7 +120,8 @@ class Enrichment:
             logger.info(f"Initializing the MP pool with {cpu_count} CPUs")
             try:
                 parallel_results = pool.map(compute_pvalue,
-                                            [(self.gene_set, self.background_gene_set, term, self.p_value_method_name) for
+                                            [(self.gene_set, self.background_gene_set, term, self.p_value_method_name)
+                                             for
                                              term in
                                              self.gene_set_library.library])
             except Exception as e:
@@ -131,20 +131,15 @@ class Enrichment:
                 pool.join()
                 logger.info(f"Releasing {cpu_count} CPUs from the MP pool")
 
-        logger.info("DEBUG: p_values = [result[-1] for result in parallel_results]")
         # Separate results and p_values for convenience
         p_values = [result[-1] for result in parallel_results]
-        logger.info("DEBUG: _, p_values_adjusted, _, _ = multipletests(p_values, method='fdr_bh')")
         # Adjust p-values for multiple testing
         _, p_values_adjusted, _, _ = multipletests(p_values, method='fdr_bh')
-        logger.info("DEBUG: ranked_terms = sorted(list(enumerate(parallel_results)), key=lambda x: p_values[x[0]])")
         # Rank terms based on their p-values
         ranked_terms = sorted(list(enumerate(parallel_results)), key=lambda x: p_values[x[0]])
 
         # Format results into a sorted list
-        logger.info("DEBUG: for i, result in ranked_terms:")
         for i, result in ranked_terms:
-            # logger.info(f"DEBUG: {i}\t\t{result}")
             term_name, overlap_size, term_description, overlap_genes, _ = result
             results.append({
                 'term': term_name,
@@ -155,7 +150,6 @@ class Enrichment:
                 'p-value': p_values[i],
                 'fdr': p_values_adjusted[i]
             })
-        logger.info("DEBUG: return results")
         return results
 
     def to_dataframe(self):

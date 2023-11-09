@@ -19,7 +19,7 @@ from gene_set_library import GeneSetLibrary
 from PIL import Image
 from streamlit import session_state as state
 
-logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -104,7 +104,7 @@ def render_table(result: pd.DataFrame) -> None:
             "rank": None,
             "term": "Term",
             "overlap_size": "Overlap size",
-            "overlap": "Overlap",
+            "overlap": "Overlap (click to expand)",
             "description": None,
             "p-value": "P-value",
             "fdr": "FDR",
@@ -404,9 +404,7 @@ Estimates for the number of DEGs based on comparison type:
                         state.background_gene_set,
                         state.p_val_method,
                     )
-                    logger.info("DEBUG: enrich = Enrichment")
                     state.enrich[gene_set_library.name] = enrich
-                    logger.info('DEBUG: with (ROOT / "results" / f"{enrich.name}.json").open("w") as results_snapshot:')
                     with (ROOT / "results" / f"{enrich.name}.json").open("w") as results_snapshot:
                         logger.info(f"Saving {enrich.name}.json")
                         json.dump(enrich.to_snapshot(), results_snapshot)

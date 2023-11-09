@@ -1,15 +1,18 @@
 from typing import List, Set, Dict
 import logging
 from pprint import pformat
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
 
 class GeneSet:
     """
     Class for storing a gene set from a gene list.
     """
 
-    def __init__(self, gene_list: List[str], validation_set: Set, name: str = "", hgcn: bool = True, format: bool = True) -> None:
+    def __init__(self, gene_list: List[str], validation_set: Set, name: str = "", hgcn: bool = True,
+                 format: bool = True) -> None:
         """
         Initialize the class with a list of genes, and two flags - 'hgcn' and 'format'.
 
