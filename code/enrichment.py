@@ -14,7 +14,7 @@ from gene_set import GeneSet
 from gene_set_library import GeneSetLibrary
 from background_gene_set import BackgroundGeneSet
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 def compute_pvalue(args: Tuple[GeneSet, BackgroundGeneSet, dict, str]) -> Tuple[str, str, str, List[str], float]:
