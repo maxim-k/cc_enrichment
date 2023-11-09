@@ -404,9 +404,9 @@ Estimates for the number of DEGs based on comparison type:
                         state.background_gene_set,
                         state.p_val_method,
                     )
-                    logger.debug("enrich = Enrichment")
+                    logger.info("DEBUG: enrich = Enrichment")
                     state.enrich[gene_set_library.name] = enrich
-                    logger.debug('with (ROOT / "results" / f"{enrich.name}.json").open("w") as results_snapshot:')
+                    logger.info('DEBUG: with (ROOT / "results" / f"{enrich.name}.json").open("w") as results_snapshot:')
                     with (ROOT / "results" / f"{enrich.name}.json").open("w") as results_snapshot:
                         logger.info(f"Saving {enrich.name}.json")
                         json.dump(enrich.to_snapshot(), results_snapshot)
