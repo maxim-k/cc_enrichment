@@ -6,4 +6,4 @@ primaryColor="#2476d4"
 secondaryBackgroundColor="#f5f8fc"
 
 [logger]
-level = "debug"
+level = "warning"

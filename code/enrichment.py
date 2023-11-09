@@ -40,7 +40,7 @@ def compute_pvalue(args: Tuple[GeneSet, BackgroundGeneSet, dict, str]) -> Tuple[
             - p_value (float): The p-value computed by Fisher's exact test
     """
     gene_set, background_gene_set, term, p_value_method_name = args
-    logger.info(f"DEBUG: {term['name']}: computing p-value")
+    # logger.info(f"DEBUG: {term['name']}: computing p-value")
     term_genes = set(term['genes'])
     n_term_genes = len(term_genes)
     overlap = gene_set.genes & term_genes
@@ -61,7 +61,7 @@ def compute_pvalue(args: Tuple[GeneSet, BackgroundGeneSet, dict, str]) -> Tuple[
     else:
         logger.error(f"Unsupported p_value_method: {p_value_method_name}")
         raise ValueError(f"Unsupported p_value_method: {p_value_method_name}")
-    logger.info(f"DEBUG: {term['name']}: done")
+    # logger.info(f"DEBUG: {term['name']}: done")
     return term['name'], f'{len(overlap)}/{len(term["genes"])}', term['description'], sorted(list(overlap)), p_value
 
 
@@ -136,7 +136,7 @@ class Enrichment:
         # Format results into a sorted list
         logger.info("DEBUG: for i, result in ranked_terms:")
         for i, result in ranked_terms:
-            logger.info(f"DEBUG: {i}\t\t{result}")
+            # logger.info(f"DEBUG: {i}\t\t{result}")
             term_name, overlap_size, term_description, overlap_genes, _ = result
             results.append({
                 'term': term_name,
