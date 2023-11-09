@@ -116,13 +116,21 @@ class Enrichment:
         """
         results = []
         logger.info(f"Calculating p-values for {self.gene_set_library.name}")
-        with mp.Pool(mp.cpu_count()) as pool:
-            logger.info(f"Initializing the MP pool with {mp.cpu_count()} CPUs")
-            parallel_results = pool.map(compute_pvalue,
-                                        [(self.gene_set, self.background_gene_set, term, self.p_value_method_name) for
-                                         term in
-                                         self.gene_set_library.library])
-            logger.info(f"Releasing {mp.cpu_count()} CPUs from the MP pool")
+        cpu_count = mp.cpu_count() - 2
+        with mp.Pool(cpu_count) as pool:
+            logger.info(f"Initializing the MP pool with {cpu_count} CPUs")
+            try:
+                parallel_results = pool.map(compute_pvalue,
+                                            [(self.gene_set, self.background_gene_set, term, self.p_value_method_name) for
+                                             term in
+                                             self.gene_set_library.library])
+            except Exception as e:
+                logging.exception("An error occurred: %s", e)
+            finally:
+                pool.close()
+                pool.join()
+                logger.info(f"Releasing {cpu_count} CPUs from the MP pool")
+
         logger.info("DEBUG: p_values = [result[-1] for result in parallel_results]")
         # Separate results and p_values for convenience
         p_values = [result[-1] for result in parallel_results]
