@@ -7,6 +7,7 @@ from pathlib import Path
 from pprint import pformat
 
 import sys
+
 sys.dont_write_bytecode = True
 
 import pandas as pd
@@ -91,6 +92,7 @@ def render_table(result: pd.DataFrame) -> None:
     """
 
     logger.info("Rendering DataFrame in Streamlit app.")
+
     def custom_format(n):
         if n > 0.001:
             return f"{n:.3f}"
@@ -253,8 +255,19 @@ def input_example() -> None:
     """
     logger.info("Setting the example input for the Streamlit app.")
     # Callback because that's the only way it works
-    state.gene_set_input = (ROOT / "code" / "static" / "example_gene_list.txt").read_text()
+    state.gene_set_input = (ROOT / "data" / "gene_lists" / "example_gene_list.txt").read_text()
     state.gene_set_name = "Example gene set"
+
+
+def update_text_widgets() -> None:
+    if 'selected_file' in state and state.selected_file != "Select ...":
+        file_path = ROOT / "data" / "gene_lists" / state.selected_file
+
+        with open(file_path, 'r') as file:
+            file_content = file.read()
+
+        state.gene_set_input = file_content
+        state.gene_set_name = state.selected_file
 
 
 def main() -> None:
@@ -267,7 +280,7 @@ def main() -> None:
     """
     logger.info("Starting the Streamlit app")
     st.sidebar.image(
-        Image.open(f"{ROOT}/code/static/CO_logo_135x72.png"), caption="Code Ocean"
+        Image.open(ROOT / "code" / "static" / "CO_logo_135x72.png"), caption="Code Ocean"
     )
     st.sidebar.title("Enrichment analysis")
     st.sidebar.write(
@@ -304,45 +317,60 @@ def main() -> None:
                 label_visibility="collapsed",
             )
 
-        with settings:
-            state.background_set = st.selectbox("Background gene set", state.bg_mapper.keys())
-            st.caption(
-                "Specifies the background set of genes. This set validates the input gene set against the chosen organism's genes and serves as a reference for p-value calculations."
+            extensions = [".txt"]
+            gene_set_files = [
+                str(file).replace(f'{ROOT}/data/gene_lists/', '') for ext in extensions for file in
+                (ROOT / "data" / "gene_lists").rglob(f"*{ext}")
+            ]
+
+            capsule_file_selected = st.selectbox(
+                "Or select a file from the `data` folder",
+                ["Select ..."] + gene_set_files,
+                index=0,
+                on_change=update_text_widgets,
+                key='selected_file'
             )
 
-            state.libraries = st.multiselect(
-                "Select libraries",
-                state.lib_mapper.keys(),
-                default=None
-            )
+    with settings:
+        state.background_set = st.selectbox("Background gene set", state.bg_mapper.keys())
+        st.caption(
+            "Specifies the background set of genes. This set validates the input gene set against the chosen organism's genes and serves as a reference for p-value calculations."
+        )
 
-            if ("libraries" in state) and ("lib_mapper" in state):
-                state.gene_set_libraries = [
-                    GeneSetLibrary(
-                        str(ROOT / "data" / "libraries" / state.lib_mapper[library]), name=library
-                    )
-                    for library in state.libraries
-                ]
+        state.libraries = st.multiselect(
+            "Select libraries",
+            state.lib_mapper.keys(),
+            default=None
+        )
 
-            if ("background_set" in state) and ("bg_mapper" in state):
-                state.background_gene_set = BackgroundGeneSet(
-                    str(ROOT / "data" / "backgrounds" / state.bg_mapper[state.background_set])
+        if ("libraries" in state) and ("lib_mapper" in state):
+            state.gene_set_libraries = [
+                GeneSetLibrary(
+                    str(ROOT / "data" / "libraries" / state.lib_mapper[library]), name=library
                 )
-                if "gene_set_input" in state:
-                    if state.gene_set_input:
-                        state.bt_submit_disabled = False
-                        state.gene_set = GeneSet(
-                            state.gene_set_input.split(), state.background_gene_set.genes, state.gene_set_name
-                        )
+                for library in state.libraries
+            ]
 
-        submit, example, placeholder = st.columns([9, 8, 29])
-        with submit:
-            bt_submit = st.button(
-                "Validate and submit", disabled=state.bt_submit_disabled
+        if ("background_set" in state) and ("bg_mapper" in state):
+            state.background_gene_set = BackgroundGeneSet(
+                str(ROOT / "data" / "backgrounds" / state.bg_mapper[state.background_set])
             )
+            if "gene_set_input" in state:
+                if state.gene_set_input:
+                    state.bt_submit_disabled = False
+                    state.gene_set = GeneSet(
+                        state.gene_set_input.split(), state.background_gene_set.genes, state.gene_set_name
+                    )
 
-        with example:
-            st.button("Input an example", on_click=input_example)
+    submit, example, placeholder = st.columns([9, 8, 29])
+    with submit:
+        bt_submit = st.button(
+            "Validate and submit", disabled=state.bt_submit_disabled
+        )
+
+    with example:
+        st.button("Input an example", on_click=input_example)
+
     with advanced_settings:
         n_results = st.slider(
             "Number of results to display", min_value=1, max_value=100, value=10, step=1
@@ -361,7 +389,8 @@ def main() -> None:
             state.advanced_settings_changed = True
 
         state.libs_custom = st.file_uploader(
-            "Upload gene set libraries", type=[".gmt"], accept_multiple_files=True, on_change=update_aliases, args=("libraries", )
+            "Upload gene set libraries", type=[".gmt"], accept_multiple_files=True, on_change=update_aliases,
+            args=("libraries",)
         )
         for lib_custom in state.libs_custom:
             lib_file = (ROOT / "data" / "libraries" / lib_custom.name).open("wb")
@@ -387,13 +416,14 @@ def main() -> None:
                 elif n_genes >= 2000:
                     n_warn = "big"
                 s = "s" if str(n_genes)[-1] != 1 else ""
-                logger.warning("You've entered {n_genes} gene{s}, which may be {n_warn} and could affect result accuracy.")
+                logger.warning(
+                    "You've entered {n_genes} gene{s}, which may be {n_warn} and could affect result accuracy.")
                 st.warning(
                     f"""You've entered {n_genes} gene{s}, which may be {n_warn} and could affect result accuracy. Consider adjusting p-value or log2 Fold Change.  
-Estimates for the number of DEGs based on comparison type:
-- Similar Conditions (e.g., same cell type, small treatment variations): Dozens to hundreds of DEGs.
-- Moderately Different Conditions (e.g., different cell types, moderate drug treatment): Hundreds to thousands.
-- Highly Different Conditions (e.g., healthy vs. cancerous tissue): Several thousand DEGs."""
+    Estimates for the number of DEGs based on comparison type:
+    - Similar Conditions (e.g., same cell type, small treatment variations): Dozens to hundreds of DEGs.
+    - Moderately Different Conditions (e.g., different cell types, moderate drug treatment): Hundreds to thousands.
+    - Highly Different Conditions (e.g., healthy vs. cancerous tissue): Several thousand DEGs."""
                 )
             with st.spinner("Calculating enrichment"):
                 for gene_set_library in state.gene_set_libraries:
