@@ -1,5 +1,5 @@
-from typing import Set
 from pathlib import Path
+from typing import Set
 
 
 class BackgroundGeneSet:
@@ -7,7 +7,9 @@ class BackgroundGeneSet:
     A class to store a set of genes and their size.
     """
 
-    def __init__(self, background_file_path: str, name: str = "", organism: str = "Homo Sapiens") -> None:
+    def __init__(
+        self, background_file_path: str, name: str = "", organism: str = "Homo Sapiens"
+    ) -> None:
         """
         Initialize BackgroundGenes object with a list of genes.
 
@@ -28,7 +30,7 @@ class BackgroundGeneSet:
         Returns:
             Set of genes representing the background
         """
-        return set(open(background_file_path, "r").read().split('\n'))
+        return set(open(background_file_path, "r").read().split("\n"))
 
     def has_gene(self, gene: str) -> bool:
         """

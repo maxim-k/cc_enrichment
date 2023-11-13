@@ -1,6 +1,7 @@
 import random
 import string
 
+
 def generate_data_string() -> str:
     """
     Generate a data string with:
@@ -12,7 +13,7 @@ def generate_data_string() -> str:
 
     def random_three_letter_word():
         """Generate a random three-letter word."""
-        return ''.join(random.choice(string.ascii_uppercase) for _ in range(3))
+        return "".join(random.choice(string.ascii_uppercase) for _ in range(3))
 
     # Number of lines to generate
     num_lines = random.randint(500, 2000)
@@ -26,10 +27,10 @@ def generate_data_string() -> str:
         while len(genes) < num_genes:
             genes.add(random_three_letter_word())
         line_parts = [term_name, term_description] + list(genes)
-        line = '\t'.join(line_parts)
+        line = "\t".join(line_parts)
         lines.append(line)
 
-    return '\n'.join(lines)
+    return "\n".join(lines)
 
 
 # Generating the data string

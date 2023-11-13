@@ -2,13 +2,9 @@ import base64
 import json
 import logging
 from math import log10
-from typing import Dict
 from pathlib import Path
 from pprint import pformat
-
-import sys
-
-sys.dont_write_bytecode = True
+from typing import Dict
 
 import pandas as pd
 import plotly.express as px
@@ -20,7 +16,9 @@ from gene_set_library import GeneSetLibrary
 from PIL import Image
 from streamlit import session_state as state
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -53,11 +51,7 @@ def update_aliases(directory: str, alias_file: str = "alias.json") -> Dict[str, 
             logger.warning(f"Failed to load aliases from {aliases_path}")
             st.warning(f"Failed to load aliases from {aliases_path}")
 
-    files = [
-        f
-        for f in (ROOT / "data" / directory).iterdir()
-        if f.is_file()
-    ]
+    files = [f for f in (ROOT / "data" / directory).iterdir() if f.is_file()]
 
     # Remove 'alias.json' from the list of files
     if Path(aliases_path) in files:
@@ -69,7 +63,9 @@ def update_aliases(directory: str, alias_file: str = "alias.json") -> Dict[str, 
             alias[file.stem] = file.name
 
     # Delete a record from aliases if there's no corresponding file
-    aliases_keys_to_delete = [key for key in alias if alias[key] not in [file.name for file in files]]
+    aliases_keys_to_delete = [
+        key for key in alias if alias[key] not in [file.name for file in files]
+    ]
 
     for key in aliases_keys_to_delete:
         del alias[key]
@@ -166,7 +162,7 @@ def collect_results(results: Dict) -> str:
     results_concat = []
     for library_name in results.keys():
         result = results[library_name].to_dataframe()
-        result.insert(0, 'Library', library_name)
+        result.insert(0, "Library", library_name)
         results_concat.append(result)
 
     return pd.concat(results_concat, ignore_index=True).to_csv(sep="\t", index=False)
@@ -255,15 +251,17 @@ def input_example() -> None:
     """
     logger.info("Setting the example input for the Streamlit app.")
     # Callback because that's the only way it works
-    state.gene_set_input = (ROOT / "data" / "gene_lists" / "example_gene_list.txt").read_text()
+    state.gene_set_input = (
+        ROOT / "data" / "gene_lists" / "example_gene_list.txt"
+    ).read_text()
     state.gene_set_name = "Example gene set"
 
 
 def update_text_widgets() -> None:
-    if 'selected_file' in state and state.selected_file != "Select ...":
+    if "selected_file" in state and state.selected_file != "Select ...":
         file_path = ROOT / "data" / "gene_lists" / state.selected_file
 
-        with open(file_path, 'r') as file:
+        with open(file_path, "r") as file:
             file_content = file.read()
 
         state.gene_set_input = file_content
@@ -280,7 +278,8 @@ def main() -> None:
     """
     logger.info("Starting the Streamlit app")
     st.sidebar.image(
-        Image.open(ROOT / "code" / "static" / "CO_logo_135x72.png"), caption="Code Ocean"
+        Image.open(ROOT / "code" / "static" / "CO_logo_135x72.png"),
+        caption="Code Ocean",
     )
     st.sidebar.title("Enrichment analysis")
     st.sidebar.write(
@@ -319,8 +318,9 @@ def main() -> None:
 
             extensions = [".txt"]
             gene_set_files = [
-                str(file).replace(f'{ROOT}/data/gene_lists/', '') for ext in extensions for file in
-                (ROOT / "data" / "gene_lists").rglob(f"*{ext}")
+                str(file).replace(f"{ROOT}/data/gene_lists/", "")
+                for ext in extensions
+                for file in (ROOT / "data" / "gene_lists").rglob(f"*{ext}")
             ]
 
             capsule_file_selected = st.selectbox(
@@ -328,45 +328,51 @@ def main() -> None:
                 ["Select ..."] + gene_set_files,
                 index=0,
                 on_change=update_text_widgets,
-                key='selected_file'
+                key="selected_file",
             )
 
     with settings:
-        state.background_set = st.selectbox("Background gene set", state.bg_mapper.keys())
+        state.background_set = st.selectbox(
+            "Background gene set", state.bg_mapper.keys()
+        )
         st.caption(
             "Specifies the background set of genes. This set validates the input gene set against the chosen organism's genes and serves as a reference for p-value calculations."
         )
 
         state.libraries = st.multiselect(
-            "Select libraries",
-            state.lib_mapper.keys(),
-            default=None
+            "Select libraries", state.lib_mapper.keys(), default=None
         )
 
         if ("libraries" in state) and ("lib_mapper" in state):
             state.gene_set_libraries = [
                 GeneSetLibrary(
-                    str(ROOT / "data" / "libraries" / state.lib_mapper[library]), name=library
+                    str(ROOT / "data" / "libraries" / state.lib_mapper[library]),
+                    name=library,
                 )
                 for library in state.libraries
             ]
 
         if ("background_set" in state) and ("bg_mapper" in state):
             state.background_gene_set = BackgroundGeneSet(
-                str(ROOT / "data" / "backgrounds" / state.bg_mapper[state.background_set])
+                str(
+                    ROOT
+                    / "data"
+                    / "backgrounds"
+                    / state.bg_mapper[state.background_set]
+                )
             )
             if "gene_set_input" in state:
                 if state.gene_set_input:
                     state.bt_submit_disabled = False
                     state.gene_set = GeneSet(
-                        state.gene_set_input.split(), state.background_gene_set.genes, state.gene_set_name
+                        state.gene_set_input.split(),
+                        state.background_gene_set.genes,
+                        state.gene_set_name,
                     )
 
     submit, example, placeholder = st.columns([9, 8, 29])
     with submit:
-        bt_submit = st.button(
-            "Validate and submit", disabled=state.bt_submit_disabled
-        )
+        bt_submit = st.button("Validate and submit", disabled=state.bt_submit_disabled)
 
     with example:
         st.button("Input an example", on_click=input_example)
@@ -382,15 +388,20 @@ def main() -> None:
         if state.p_val_method != "Fisher's Exact Test":
             state.advanced_settings_changed = True
 
-        state.bg_custom = st.file_uploader("Upload your background gene set", type=[".txt"])
+        state.bg_custom = st.file_uploader(
+            "Upload your background gene set", type=[".txt"]
+        )
         if state.bg_custom is not None:
             bg_file = (ROOT / "data" / "backgrounds" / state.bg_custom.name).open("wb")
             bg_file.write(state.bg_custom.getvalue())
             state.advanced_settings_changed = True
 
         state.libs_custom = st.file_uploader(
-            "Upload gene set libraries", type=[".gmt"], accept_multiple_files=True, on_change=update_aliases,
-            args=("libraries",)
+            "Upload gene set libraries",
+            type=[".gmt"],
+            accept_multiple_files=True,
+            on_change=update_aliases,
+            args=("libraries",),
         )
         for lib_custom in state.libs_custom:
             lib_file = (ROOT / "data" / "libraries" / lib_custom.name).open("wb")
@@ -417,7 +428,8 @@ def main() -> None:
                     n_warn = "big"
                 s = "s" if str(n_genes)[-1] != 1 else ""
                 logger.warning(
-                    "You've entered {n_genes} gene{s}, which may be {n_warn} and could affect result accuracy.")
+                    "You've entered {n_genes} gene{s}, which may be {n_warn} and could affect result accuracy."
+                )
                 st.warning(
                     f"""You've entered {n_genes} gene{s}, which may be {n_warn} and could affect result accuracy. Consider adjusting p-value or log2 Fold Change.  
     Estimates for the number of DEGs based on comparison type:
@@ -427,7 +439,9 @@ def main() -> None:
                 )
             with st.spinner("Calculating enrichment"):
                 for gene_set_library in state.gene_set_libraries:
-                    logger.info(f"Calculating enrichment results for {gene_set_library.name}")
+                    logger.info(
+                        f"Calculating enrichment results for {gene_set_library.name}"
+                    )
                     enrich = Enrichment(
                         state.gene_set,
                         gene_set_library,
@@ -435,7 +449,9 @@ def main() -> None:
                         state.p_val_method,
                     )
                     state.enrich[gene_set_library.name] = enrich
-                    with (ROOT / "results" / f"{enrich.name}.json").open("w") as results_snapshot:
+                    with (ROOT / "results" / f"{enrich.name}.json").open(
+                        "w"
+                    ) as results_snapshot:
                         logger.info(f"Saving {enrich.name}.json")
                         json.dump(enrich.to_snapshot(), results_snapshot)
                 logger.info(f"Enrichment results for {gene_set_library.name} are ready")
