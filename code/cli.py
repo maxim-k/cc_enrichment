@@ -13,38 +13,40 @@ app = typer.Typer()
 
 def run_enrichment():
     return
+
+
 @app.command()
 def main(
-    gene_sets: List[Path] = typer.Option(
-        None,
-        "--gene-sets", "-g",
-        exists=True,
-        file_okay=True,
-        dir_okay=False,
-        help="Paths to gene set files."
-    ),
-    background: Optional[Path] = typer.Option(
-        None,
-        "--background", "-b",
-        exists=True,
-        file_okay=True,
-        dir_okay=False,
-        help="Path to the background gene set file."
-    ),
-    libraries: List[Path] = typer.Option(
-        None,
-        "--libraries", "-l",
-        exists=True,
-        file_okay=True,
-        dir_okay=False,
-        help="Paths to gene set library files."
-    ),
+        gene_sets: List[Path] = typer.Option(
+            None,
+            "--gene-sets", "-g",
+            exists=True,
+            file_okay=True,
+            dir_okay=False,
+            help="Paths to gene set files."
+        ),
+        background: Optional[Path] = typer.Option(
+            None,
+            "--background", "-b",
+            exists=True,
+            file_okay=True,
+            dir_okay=False,
+            help="Path to the background gene set file."
+        ),
+        libraries: List[Path] = typer.Option(
+            None,
+            "--libraries", "-l",
+            exists=True,
+            file_okay=True,
+            dir_okay=False,
+            help="Paths to gene set library files."
+        ),
 
-    p_value_method: str = typer.Option(
-        "fishers_exact",
-        "--method", "-m",
-        help="P-value calculation method."
-    )
+        p_value_method: str = typer.Option(
+            "fishers_exact",
+            "--method", "-m",
+            help="P-value calculation method."
+        )
 ):
     # Default values handling
     if not gene_sets:
@@ -64,9 +66,8 @@ def main(
 
     run_enrichment()
 
-
     return
 
 
 if __name__ == "__main__":
-    main()
+    app()

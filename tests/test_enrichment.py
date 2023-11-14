@@ -1,8 +1,12 @@
+from pathlib import Path
+
 from code.background_gene_set import BackgroundGeneSet
 from code.enrichment import Enrichment
 from code.gene_set import GeneSet
 from code.gene_set_library import GeneSetLibrary
 from timeit import default_timer as timer
+
+ROOT = Path(__file__).resolve().parent.parent
 
 
 class TestEnrichment:
@@ -45,9 +49,9 @@ class TestEnrichment:
                 "OS",
             ]
         )
-        gene_set_library = GeneSetLibrary("./tests/sample.gmt")
+        gene_set_library = GeneSetLibrary(str(ROOT / "data" / "backgrounds" / "hgnc_symbols_2023-01-01.txt"))
         background_gene_set = BackgroundGeneSet(
-            open("./hgnc_symbols_2023-01-01.txt", "r").read().split()
+            str(ROOT / "data" / "backgrounds" / "hgnc_symbols_2023-01-01.txt")
         )
         start = timer()
         enrich = Enrichment(gene_set, gene_set_library, background_gene_set)
