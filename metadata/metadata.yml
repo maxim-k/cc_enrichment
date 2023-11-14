@@ -1,2 +1,6 @@
 metadata_version: 1
 name: Gene Set Enrichment Analysis
+tags:
+- Enrichment
+authors:
+- name: Maxim Kuleshov
