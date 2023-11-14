@@ -17,6 +17,7 @@
 Users have the flexibility to input their gene set in two ways:
 - Direct Input: Paste a newline-separated list of gene names and assign a name to the gene set.
 - File Selection: Choose an existing gene list from the local `data` folder.
+
 #### Gene Set Validation
 The app performs crucial validation steps to ensure the accuracy of the analysis:
 - Duplicate Check: It checks for any duplicate gene names within the input gene set.
@@ -25,9 +26,11 @@ The app performs crucial validation steps to ensure the accuracy of the analysis
 #### Results Display and Interaction
 - Interactive Chart: The results for each gene set library are displayed in an interactive chart, allowing users to engage with the data dynamically.
 - Interactive Bar Graph: An interactive bar graph provides a visual representation of the results for each gene set library.
+
 #### Data Export Options
 - Individual Library Export: Users can save the results for each gene set library in TSV and JSON formats.
 - Consolidated Export: There is an option to save results for all libraries in a single TSV file.
+
 #### Results Management
 All results, along with the complementary metadata, are stored in the `results` folder and are assigned unique filenames.
 
@@ -35,6 +38,7 @@ All results, along with the complementary metadata, are stored in the `results` 
 
 #### Customization of Results Display
 Users can customize the number of results to display in both the chart and the bar graph in the Streamlit app.
+
 #### P-value Calculation Methods
 The app offers various statistical methods to calculate p-values:
 - Fisher's Exact Test.
