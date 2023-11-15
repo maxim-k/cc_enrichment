@@ -239,7 +239,6 @@ def render_validation() -> None:
                     },
                     hide_index=True,
                 )
-        state.bt_submit_disabled = False
 
 
 def input_example() -> None:
@@ -363,7 +362,6 @@ def main() -> None:
             )
             if "gene_set_input" in state:
                 if state.gene_set_input:
-                    state.bt_submit_disabled = False
                     state.gene_set = GeneSet(
                         state.gene_set_input.split(),
                         state.background_gene_set.genes,
@@ -372,6 +370,7 @@ def main() -> None:
 
     submit, example, placeholder = st.columns([9, 8, 29])
     with submit:
+        state.bt_submit_disabled = not all(key in state and state[key] for key in ["gene_set", "background_gene_set", "gene_set_libraries"])
         bt_submit = st.button("Validate and submit", disabled=state.bt_submit_disabled)
 
     with example:
@@ -463,6 +462,9 @@ def main() -> None:
             if not state.gene_set_libraries:
                 logger.error("No libraries were selected for the analysis")
                 st.error("No libraries were selected for the analysis")
+            if not state.background_gene_set:
+                logger.error("No background gene set was selected for the analysis")
+                st.error("No background gene set was selected for the analysis")
 
     if state.results_ready:
         logger.info("Displaying enrichment results")
