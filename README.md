@@ -1,4 +1,4 @@
-# CodeOcean Gene Set Enrichment Analysis
+# Transparent Gene Set Enrichment Analysis
 
 ## Prerequisites
 - Have a text file with a set of newline-separated background genes in `/data/backgrounds`.
@@ -7,8 +7,7 @@
 
 ## Run the Application
 - To run locally, use `streamlit run code/streamlit.app`
-- To run in Docker use `docker build -t co_enrichment:latest .` and `docker run -p 8501:8501 co_enrichment:latest`
-- To run on CodeOcean, click the Streamlit icon on the Cloud Workstation dashboard.
+- To run in Docker use `docker build -t cc_enrichment:latest .` and `docker run -p 8501:8501 co_enrichment:latest`
 
 ## Overview of Application Components
 ### Key Features
