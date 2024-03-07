@@ -278,7 +278,7 @@ def main() -> None:
     logger.info("Starting the Streamlit app")
     st.sidebar.image(
         Image.open(ROOT / "code" / "static" / "logo.png"),
-        caption="Code Ocean",
+        caption="Crystal Clear Enrichment Analysis",
     )
     st.sidebar.title("Enrichment analysis")
     st.sidebar.write(
