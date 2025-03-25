@@ -1,5 +1,6 @@
 [server]
 maxUploadSize = 1
+port = 8080
 
 [theme]
 primaryColor="#2476d4"

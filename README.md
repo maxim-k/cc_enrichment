@@ -7,7 +7,7 @@
 
 ## Run the Application
 - To run locally, use `streamlit run code/streamlit.app`
-- To run in Docker use `docker build -t cc_enrichment:latest .` and `docker run -p 8501:8501 co_enrichment:latest`
+- To run in Docker use `docker build -t cc_enrichment:latest .` and `docker run -p 8080:8080 cc_enrichment:latest`
 
 ## Overview of Application Components
 ### Key Features
