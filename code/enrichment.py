@@ -1,13 +1,13 @@
 import json
 import logging
 import multiprocessing as mp
+from code.background_gene_set import BackgroundGeneSet
+from code.gene_set import GeneSet
+from code.gene_set_library import GeneSetLibrary
 from datetime import datetime
 from typing import Any, Dict, List, Tuple
 
 import pandas as pd
-from background_gene_set import BackgroundGeneSet
-from gene_set import GeneSet
-from gene_set_library import GeneSetLibrary
 from scipy.stats import chi2_contingency, fisher_exact, hypergeom
 from statsmodels.stats.multitest import multipletests
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def compute_pvalue(
-    args: Tuple[GeneSet, BackgroundGeneSet, dict, str]
+    args: Tuple[GeneSet, BackgroundGeneSet, dict, str],
 ) -> Tuple[str, str, str, List[str], float]:
     """
     Computes the p-value for a given term using Fisher's exact test.

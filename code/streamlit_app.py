@@ -370,7 +370,10 @@ def main() -> None:
 
     submit, example, placeholder = st.columns([9, 8, 29])
     with submit:
-        state.bt_submit_disabled = not all(key in state and state[key] for key in ["gene_set", "background_gene_set", "gene_set_libraries"])
+        state.bt_submit_disabled = not all(
+            key in state and state[key]
+            for key in ["gene_set", "background_gene_set", "gene_set_libraries"]
+        )
         bt_submit = st.button("Validate and submit", disabled=state.bt_submit_disabled)
 
     with example:
