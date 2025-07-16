@@ -3,15 +3,16 @@ from typing import List, Dict, Any, Set, Optional
 
 import pandas as pd
 
-from background_gene_set import BackgroundGeneSet
-from gene_set import GeneSet
-from gene_set_library import GeneSetLibrary
-from enrichment import Enrichment
+from code.background_gene_set import BackgroundGeneSet
+from code.gene_set import GeneSet
+from code.gene_set_library import GeneSetLibrary
+from code.enrichment import Enrichment
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 
-class IterativeEnricher:
+class IterativeEnrichment:
     """
     Wrapper for iterative gene set enrichment.
 
@@ -31,20 +32,46 @@ class IterativeEnricher:
 
     def __init__(
         self,
-        gene_list: List[str],
-        background_file: str,
-        gmt_file: str,
+        gene_set: GeneSet,
+        gene_set_library: GeneSetLibrary,
+        background_gene_set: BackgroundGeneSet,
         p_value_method_name: str = "Fisher's Exact Test",
+        name: str = None,
         p_threshold: float = 0.01,
         max_iterations: Optional[int] = None,
     ) -> None:
-        self.background: BackgroundGeneSet = BackgroundGeneSet(background_file)
-        self.library: GeneSetLibrary = GeneSetLibrary(gmt_file)
-        self.master_genes: GeneSet = GeneSet(gene_list, set(self.background.genes))
+        self.gene_set = gene_set
+        self.gene_set_library = gene_set_library
+        self.background_gene_set = background_gene_set
         self.p_value_method_name: str = p_value_method_name
         self.p_threshold: float = p_threshold
         self.max_iterations: Optional[int] = max_iterations
+        self.name = (
+            name
+            if name
+            else f"{gene_set.name}_{gene_set_library.name}_{background_gene_set.name}_{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        )
         self._results: List[Dict[str, Any]] = self._compute_enrichment()
+
+    @property
+    def results(self) -> List[Dict[str, Any]]:
+        """
+        The list of iteration records for this enricher.
+
+        :returns: List of dictionaries with keys [iteration, term, library, p-value, genes]
+        :rtype: List[Dict[str, Any]]
+        """
+        return self._results
+
+    @results.setter
+    def results(self, value: List[Dict[str, Any]]) -> None:
+        """
+        Setter for _results.
+
+        Args:
+            value: A list containing dictionaries of enrichment results
+        """
+        self._results = value
 
     def _compute_enrichment(self) -> List[Dict[str, Any]]:
         """
@@ -53,7 +80,7 @@ class IterativeEnricher:
         :returns: List of iteration records
         :rtype: List[Dict[str, Any]]
         """
-        remaining: Set[str] = set(self.master_genes.genes)
+        remaining: Set[str] = set(self.gene_set.genes)
         iteration: int = 1
         records: List[Dict[str, Any]] = []
 
@@ -65,12 +92,12 @@ class IterativeEnricher:
                 logger.warning("Reached max_iterations; stopping iterative enrichment.")
                 break
 
-            current_set = GeneSet(list(remaining), set(self.background.genes))
+            current_set = GeneSet(list(remaining), set(self.background_gene_set.genes))
             try:
                 enr = Enrichment(
                     gene_set=current_set,
-                    gene_set_library=self.library,
-                    background_gene_set=self.background,
+                    gene_set_library=self.gene_set_library,
+                    background_gene_set=self.background_gene_set,
                     p_value_method_name=self.p_value_method_name,
                 )
             except Exception as e:
@@ -92,7 +119,7 @@ class IterativeEnricher:
             record: Dict[str, Any] = {
                 "iteration": iteration,
                 "term": top.get("term", ""),
-                "library": self.library.name,
+                "library": self.gene_set_library.name,
                 "p-value": pval,
                 "genes": sorted(genes_in_term),
             }
@@ -101,16 +128,6 @@ class IterativeEnricher:
             iteration += 1
 
         return records
-
-    @property
-    def results(self) -> List[Dict[str, Any]]:
-        """
-        The list of iteration records for this enricher.
-
-        :returns: List of dictionaries with keys [iteration, term, library, p-value, genes]
-        :rtype: List[Dict[str, Any]]
-        """
-        return self._results
 
     def to_dataframe(self) -> pd.DataFrame:
         """

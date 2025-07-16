@@ -1,4 +1,7 @@
-from code.iter_enrichment import IterativeEnricher
+from code.background_gene_set import BackgroundGeneSet
+from code.gene_set import GeneSet
+from code.gene_set_library import GeneSetLibrary
+from code.iter_enrichment import IterativeEnrichment
 from pathlib import Path
 
 import pytest
@@ -13,25 +16,22 @@ def create_test_files():
 
     # Create a simple GMT library: T1 -> A, B; T2 -> C; T3 -> D
     gmt_file = ROOT / "tmp" / "test_lib.gmt"
-    gmt_content = (
-        "T1\tdescription\tA\tB\n" "T2\tdescription\tC\n" "T3\tdescription\tD\n"
-    )
-    gmt_file.write_text(gmt_content)
 
-    return str(background_file), str(gmt_file)
+    gmt_file.write_text("T1\tdescription\tA\tB\n" "T2\tdescription\tC\n" "T3\tdescription\tD\n")
+
+    return BackgroundGeneSet(str(ROOT / "tmp" / "background.txt")), GeneSetLibrary(str(ROOT / "tmp" / "test_lib.gmt"))
 
 
 def test_iterative_enrichment_peels_off():
-    background_file, gmt_file = create_test_files()
-    genes = ["A", "B", "C"]
-    enr = IterativeEnricher(
-        gene_list=genes,
-        background_file=background_file,
-        gmt_file=gmt_file,
+    background_gene_set, gene_set_library = create_test_files()
+    genes = GeneSet(["A", "B", "C"])
+    enr = IterativeEnrichment(
+        gene_set=genes,
+        background_gene_set=background_gene_set,
+        gene_set_library=gene_set_library,
         p_value_method_name="Fisher's Exact Test",
         p_threshold=1.0,
     )
-    enr.run()
     df = enr.to_dataframe()
 
     # Expect two iterations: T1 removes A,B; then T2 removes C
@@ -43,16 +43,15 @@ def test_iterative_enrichment_peels_off():
 
 
 def test_to_dot_structure():
-    background_file, gmt_file = create_test_files()
-    genes = ["A", "B", "C"]
-    enr = IterativeEnricher(
-        gene_list=genes,
-        background_file=background_file,
-        gmt_file=gmt_file,
+    background_gene_set, gene_set_library = create_test_files()
+    genes = GeneSet(["A", "B", "C"])
+    enr = IterativeEnrichment(
+        gene_set=genes,
+        background_gene_set=background_gene_set,
+        gene_set_library=gene_set_library,
         p_value_method_name="Fisher's Exact Test",
         p_threshold=1.0,
     )
-    enr.run()
     dot = enr.to_dot()
 
     # Basic DOT structure checks
