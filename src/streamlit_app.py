@@ -9,12 +9,13 @@ from typing import Dict
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+from PIL import Image
+from streamlit import session_state as state
+
 from background_gene_set import BackgroundGeneSet
 from enrichment import Enrichment
 from gene_set import GeneSet
 from gene_set_library import GeneSetLibrary
-from PIL import Image
-from streamlit import session_state as state
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -277,7 +278,7 @@ def main() -> None:
     """
     logger.info("Starting the Streamlit app")
     st.sidebar.image(
-        Image.open(ROOT / "code" / "static" / "logo.png"),
+        Image.open(ROOT / "src" / "static" / "logo.png"),
         caption="Crystal Clear Enrichment Analysis",
     )
     st.sidebar.title("Enrichment analysis")

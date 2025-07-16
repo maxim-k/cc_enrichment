@@ -2,7 +2,8 @@ from pathlib import Path
 from typing import List, Optional
 
 import typer
-from background_gene_set import BackgroundGeneSet
+
+from src.background_gene_set import BackgroundGeneSet
 from enrichment import Enrichment
 from gene_set import GeneSet
 from gene_set_library import GeneSetLibrary

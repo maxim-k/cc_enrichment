@@ -1,8 +1,9 @@
-from code.background_gene_set import BackgroundGeneSet
-from code.enrichment import Enrichment
-from code.gene_set import GeneSet
-from code.gene_set_library import GeneSetLibrary
 from timeit import default_timer as timer
+
+from src.background_gene_set import BackgroundGeneSet
+from src.enrichment import Enrichment
+from src.gene_set import GeneSet
+from src.gene_set_library import GeneSetLibrary
 
 
 class TestEnrichment:

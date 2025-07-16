@@ -1,15 +1,16 @@
 import json
 import logging
 import multiprocessing as mp
-from code.background_gene_set import BackgroundGeneSet
-from code.gene_set import GeneSet
-from code.gene_set_library import GeneSetLibrary
 from datetime import datetime
 from typing import Any, Dict, List, Tuple
 
 import pandas as pd
 from scipy.stats import chi2_contingency, fisher_exact, hypergeom
 from statsmodels.stats.multitest import multipletests
+
+from src.background_gene_set import BackgroundGeneSet
+from src.gene_set import GeneSet
+from src.gene_set_library import GeneSetLibrary
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"

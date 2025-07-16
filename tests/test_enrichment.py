@@ -1,9 +1,10 @@
-from code.background_gene_set import BackgroundGeneSet
-from code.enrichment import Enrichment
-from code.gene_set import GeneSet
-from code.gene_set_library import GeneSetLibrary
 from pathlib import Path
 from timeit import default_timer as timer
+
+from src.background_gene_set import BackgroundGeneSet
+from src.enrichment import Enrichment
+from src.gene_set import GeneSet
+from src.gene_set_library import GeneSetLibrary
 
 ROOT = Path(__file__).resolve().parent.parent
 

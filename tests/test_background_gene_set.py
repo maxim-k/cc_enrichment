@@ -1,5 +1,6 @@
-from code.background_gene_set import BackgroundGeneSet
 from pathlib import Path
+
+from src.background_gene_set import BackgroundGeneSet
 
 ROOT = Path(__file__).resolve().parent.parent
 

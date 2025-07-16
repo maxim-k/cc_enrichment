@@ -1,13 +1,13 @@
 import logging
-from typing import List, Dict, Any, Set, Optional
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Set
 
 import pandas as pd
 
-from code.background_gene_set import BackgroundGeneSet
-from code.gene_set import GeneSet
-from code.gene_set_library import GeneSetLibrary
-from code.enrichment import Enrichment
-from datetime import datetime
+from src.background_gene_set import BackgroundGeneSet
+from src.enrichment import Enrichment
+from src.gene_set import GeneSet
+from src.gene_set_library import GeneSetLibrary
 
 logger = logging.getLogger(__name__)
 
@@ -16,12 +16,12 @@ class IterativeEnrichment:
     """
     Wrapper for iterative gene set enrichment.
 
-    :param gene_list: List of gene identifiers to analyze.
-    :type gene_list: List[str]
-    :param background_file: Path to the background genes file (one gene per line).
-    :type background_file: str
-    :param gmt_file: Path to the gene set library GMT file.
-    :type gmt_file: str
+    :param gene_set: List of gene identifiers to analyze.
+    :type gene_set: GeneSet
+    :param background_gene_set: Background genes file (one gene per line).
+    :type background_gene_set: BackgroundGeneSet
+    :param gene_set_library: Gene set library GMT file.
+    :type gene_set_library: GeneSetLibrary
     :param p_value_method_name: Name of p-value calculation method to pass to Enrichment.
     :type p_value_method_name: str
     :param p_threshold: P-value cutoff for including terms.

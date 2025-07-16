@@ -1,5 +1,4 @@
 import logging
-from pprint import pformat
 from typing import Dict, List, Set
 
 logging.basicConfig(
@@ -32,7 +31,7 @@ class GeneSet:
         self.genes: Set[str] = set()
         self.name: str = name
         self.size: int = 0
-        self.validation: Dict[set[str] : set[str]] = {
+        self.validation: Dict[set[str]: set[str]] = {
             "duplicates": set(),
             "non_valid": set(),
         }
