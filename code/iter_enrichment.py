@@ -1,11 +1,12 @@
 import logging
-from code.background_gene_set import BackgroundGeneSet
-from code.enrichment import Enrichment
-from code.gene_set import GeneSet
-from code.gene_set_library import GeneSetLibrary
-from typing import Any, Dict, List, Optional, Set
+from typing import List, Dict, Any, Set, Optional
 
 import pandas as pd
+
+from background_gene_set import BackgroundGeneSet
+from gene_set import GeneSet
+from gene_set_library import GeneSetLibrary
+from enrichment import Enrichment
 
 logger = logging.getLogger(__name__)
 
@@ -43,16 +44,18 @@ class IterativeEnricher:
         self.p_value_method_name: str = p_value_method_name
         self.p_threshold: float = p_threshold
         self.max_iterations: Optional[int] = max_iterations
-        self.records: List[Dict[str, Any]] = []
+        self._results: List[Dict[str, Any]] = self._compute_enrichment()
 
-    def run(self) -> None:
+    def _compute_enrichment(self) -> List[Dict[str, Any]]:
         """
-        Execute iterative enrichment until no term meets the p-value threshold or limits are reached.
+        Perform iterative enrichment, peeling off top terms until no further terms pass p-value threshold.
 
-        :returns: None
+        :returns: List of iteration records
+        :rtype: List[Dict[str, Any]]
         """
         remaining: Set[str] = set(self.master_genes.genes)
         iteration: int = 1
+        records: List[Dict[str, Any]] = []
 
         while True:
             if not remaining:
@@ -80,7 +83,7 @@ class IterativeEnricher:
                 break
 
             top = results[0]
-            pval = top.get("p-value", None)
+            pval = top.get("p-value")
             if pval is None or pval >= self.p_threshold:
                 logger.info("Top term p-value >= threshold; terminating.")
                 break
@@ -93,9 +96,21 @@ class IterativeEnricher:
                 "p-value": pval,
                 "genes": sorted(genes_in_term),
             }
-            self.records.append(record)
+            records.append(record)
             remaining -= genes_in_term
             iteration += 1
+
+        return records
+
+    @property
+    def results(self) -> List[Dict[str, Any]]:
+        """
+        The list of iteration records for this enricher.
+
+        :returns: List of dictionaries with keys [iteration, term, library, p-value, genes]
+        :rtype: List[Dict[str, Any]]
+        """
+        return self._results
 
     def to_dataframe(self) -> pd.DataFrame:
         """
@@ -104,7 +119,7 @@ class IterativeEnricher:
         :returns: DataFrame of iteration records
         :rtype: pandas.DataFrame
         """
-        return pd.DataFrame(self.records)
+        return pd.DataFrame(self.results)
 
     def to_tsv(self) -> str:
         """
@@ -122,7 +137,9 @@ class IterativeEnricher:
         :returns: JSON-formatted string
         :rtype: str
         """
-        return pd.Series(self.records).to_json(orient="records", indent=2)
+        import json
+
+        return json.dumps(self.results, indent=2)
 
     def to_dot(self) -> str:
         """
@@ -139,7 +156,7 @@ class IterativeEnricher:
         gene_nodes: Set[str] = set()
         edges: List[str] = []
 
-        for rec in self.records:
+        for rec in self.results:
             term_id = f"term_{rec['iteration']}"
             term_label = rec.get("term", "")
             term_nodes.add(f'{term_id} [label="{term_label}", color="{lib_color}"]')
