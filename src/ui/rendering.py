@@ -1,12 +1,15 @@
 import logging
 from math import log10
+from typing import Dict, List
 
 import pandas as pd
+import numpy as np
 import plotly.express as px
 import streamlit as st
 from streamlit import session_state as state
 
 from src.enrichment import Enrichment
+from src.iter_enrichment import IterativeEnrichment
 from src.ui.utils import download_link
 
 logging.basicConfig(
@@ -144,3 +147,110 @@ def render_validation() -> None:
                     },
                     hide_index=True,
                 )
+
+def render_iter_table(result: pd.DataFrame) -> None:
+    """
+    Render a styled DataFrame of iterative enrichment results.
+
+    :param result: DataFrame indexed by 'iteration' with columns ['term', 'p-value', 'genes'].
+    :type result: pandas.DataFrame
+    """
+    logger.info("Rendering iterative results table.")
+
+    # Rename 'genes' column for clarity
+    df = result.rename(columns={'genes': 'Genes removed'})
+
+    # Apply custom formatting to p-value column
+    def custom_format(n):
+        if n > 0.001:
+            return f"{n:.3f}"
+        return f"{n:.2e}"
+
+    styled = df.style.format({'p-value': custom_format})
+
+    st.dataframe(
+        styled,
+        use_container_width=True,
+        column_config={
+            'term': 'Term',
+            'p-value': 'P-value',
+            'Genes removed': 'Genes removed'
+        }
+    )
+
+
+def render_iter_barchart(result: pd.DataFrame) -> None:
+    """
+    Render a bar chart visualization of iterative enrichment results.
+
+    :param result: DataFrame indexed by 'iteration' with at least a 'p-value' column.
+    :type result: pandas.DataFrame
+    """
+    logger.info("Rendering iterative bar chart.")
+
+    # Prepare bar plot data
+    bar_df = result.reset_index()[['iteration', 'term', 'p-value']].copy()
+    bar_df['-log10(p-value)'] = bar_df['p-value'].apply(lambda x: -log10(x) if x and x > 0 else None)
+
+    fig = px.bar(
+        bar_df,
+        x='iteration',
+        y='-log10(p-value)',
+        hover_data=['term'],
+        labels={'iteration': 'Iteration', '-log10(p-value)': '-log10(p-value)'},
+        title='Iterative Enrichment p-value per Iteration'
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def render_iter_results(result: IterativeEnrichment, file_name: str) -> None:
+    """
+    Render a results section for iterative enrichment within the Streamlit app.
+
+    :param result: IterativeEnrichment object containing iteration records.
+    :type result: src.iter_enrichment.IterativeEnrichment
+    :param file_name: Name of the library or section header.
+    :type file_name: str
+    """
+    logger.info(f"Rendering iterative results for {file_name}.")
+
+    st.divider()
+    st.subheader(file_name)
+
+    # Tabs for table and chart
+    table_tab, bar_tab = st.tabs(["Iterations", "Bar chart"])
+    df = result.to_dataframe().set_index('iteration')
+
+    with table_tab:
+        render_iter_table(df)
+
+    with bar_tab:
+        render_iter_barchart(df)
+
+    # Download links
+    st.markdown(
+        f'Download iterative results as {download_link(result.to_tsv(), file_name, "tsv")}, '
+        f'{download_link(result.to_json(), file_name, "json")}',
+        unsafe_allow_html=True
+    )
+
+
+def render_network(dot: str, title: str = "Iterative Enrichment Network") -> None:
+    """
+    Render a bipartite network graph of iterative enrichment across libraries.
+
+    :param dot: Graphviz DOT-format string.
+    :type dot: str
+    :param title: Header title for the network graph.
+    :type title: str
+    """
+    logger.info("Rendering iterative network graph.")
+
+    st.divider()
+    st.subheader(title)
+    st.graphviz_chart(dot)
+    # Offer DOT download
+    st.markdown(
+        f'Download network graph as {download_link(dot, "iterative_network", "dot")}',
+        unsafe_allow_html=True
+    )
