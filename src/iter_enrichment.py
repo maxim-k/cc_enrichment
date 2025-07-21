@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Set
 
@@ -160,36 +161,60 @@ class IterativeEnrichment:
 
     def to_dot(self) -> str:
         """
-        Generate a Graphviz DOT representation of the iterative enrichment network.
-
-        :returns: DOT-format string
-        :rtype: str
+        Generate a valid Graphviz DOT for the iterative enrichment network,
+        with sanitized, quoted IDs, semicolons, and no duplicates.
         """
-        # Define a simple color palette
+
+        def _sanitize_id(raw: str) -> str:
+            """
+            Convert raw label into a valid DOT node ID: replace non-alphanumeric with underscores.
+            Collapse multiple underscores and strip leading/trailing underscores.
+            """
+            # replace non-word characters with underscore
+            s = re.sub(r"\W+", "_", raw)
+            # collapse underscores
+            s = re.sub(r"_+", "_", s)
+            return s.strip("_")
+
         palette: List[str] = ["#1b9e77", "#d95f02", "#7570b3", "#e7298a", "#66a61e"]
         lib_color = palette[0]
 
-        term_nodes: Set[str] = set()
-        gene_nodes: Set[str] = set()
-        edges: List[str] = []
+        nodes: Set[str] = set()
+        edges: Set[str] = set()
 
+        # Build nodes and edges
         for rec in self.results:
-            term_id = f"term_{rec['iteration']}"
             term_label = rec.get("term", "")
-            term_nodes.add(f'{term_id} [label="{term_label}", color="{lib_color}"]')
+            # sanitize and quote term ID
+            raw_id = f"term_{rec['iteration']}_{term_label}"
+            term_id = _sanitize_id(raw_id)
+            term_node = (
+                f'"{term_id}" '
+                f'[label="{term_label} (it {rec["iteration"]})", '
+                f'style=filled, fillcolor="{lib_color}", fontcolor="white"];'
+            )
+            nodes.add(term_node)
+
             for gene in rec.get("genes", []):
-                gene_id = f"gene_{gene}"
-                gene_nodes.add(f'{gene_id} [label="{gene}"]')
-                edges.append(f"{gene_id} -- {term_id}")
+                gene_id = _sanitize_id(f"gene_{gene}")
+                gene_node = f'"{gene_id}" [label="{gene}"];'
+                nodes.add(gene_node)
+                # create edge with quoted IDs and semicolon
+                edge = f'"{gene_id}" -- "{term_id}";'
+                edges.add(edge)
 
-        lines: List[str] = [
-            "graph iterative_enrichment {",
-            "  graph [layout=neato];",
-        ]
-        for node in term_nodes | gene_nodes:
+        # Assemble DOT
+        lines: List[str] = []
+        lines.append("graph iterative_enrichment {")
+        lines.append("  graph [layout=neato];")
+        lines.append("  node [shape=ellipse];")
+
+        # add nodes
+        for node in sorted(nodes):
             lines.append(f"  {node}")
-        for edge in edges:
+        # add edges
+        for edge in sorted(edges):
             lines.append(f"  {edge}")
-        lines.append("}")
 
+        lines.append("}")
         return "\n".join(lines)

@@ -3,7 +3,7 @@ import logging
 import math
 from io import StringIO
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Set
 
 import streamlit as st
 from PIL import Image
@@ -23,7 +23,7 @@ from src.ui.rendering import (
     render_results,
     render_validation,
 )
-from src.ui.utils import download_link, update_aliases
+from src.ui.utils import download_link, update_aliases, sanitize_id
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -61,29 +61,50 @@ def _build_iterative_tables_download(all_iter_results: Dict[str, List[dict]]) ->
     return "\n".join(rows)
 
 
-def _merge_iterative_dot(per_lib_parts: Dict[str, dict]) -> str:
+def _merge_iterative_dot(per_lib_parts: Dict[str, Dict]) -> str:
+    """
+    Merge per-library DOT fragments into a single graph,
+    sanitizing and semicolon-terminating all statements,
+    deduplicating nodes and edges, and including a legend cluster.
+    """
     lines = [
         "graph iterative_enrichment_all {",
         "  graph [layout=neato, overlap=false];",
-        '  node [shape=ellipse, fontname="Helvetica"];',
+        "  node [shape=ellipse, fontname=\"Helvetica\"];"
     ]
+    # Legend cluster with semicolons
     lines.append("  subgraph cluster_legend {")
     lines.append('    label="Legend";')
-    for i, (lib, parts) in enumerate(per_lib_parts.items(), start=1):
+    for idx, (lib, parts) in enumerate(per_lib_parts.items(), start=1):
         color = parts["color"]
+        legend_id = sanitize_id(f"legend_{lib}")
         lines.append(
-            f'    legend_{i} [label="{lib}", shape=box, style=filled, fillcolor="{color}", fontcolor="white"];'
+            f'    "{legend_id}" [label="{lib}", shape=box, style=filled, fillcolor="{color}", fontcolor="white"];'
         )
     lines.append("  }")
+
+    # Collect all unique nodes and edges
+    seen_nodes = set()
+    seen_edges = set()
     for parts in per_lib_parts.values():
-        for n in parts["nodes_term"]:
-            lines.append(f"  {n}")
-        for n in parts["nodes_gene"]:
-            lines.append(f"  {n}")
+        for n in parts["nodes_term"].union(parts["nodes_gene"]):
+            # Ensure node statement ends with semicolon
+            stmt = n.rstrip(';') + ';'
+            seen_nodes.add(stmt)
         for e in parts["edges"]:
-            lines.append(f"  {e}")
+            stmt = e.rstrip(';') + ';'
+            seen_edges.add(stmt)
+
+    # Append nodes and edges
+    for stmt in sorted(seen_nodes):
+        # Quote IDs inside if needed are assumed sanitized already
+        lines.append(f"  {stmt}")
+    for stmt in sorted(seen_edges):
+        lines.append(f"  {stmt}")
+
     lines.append("}")
     return "\n".join(lines)
+
 
 
 # static palette reused
@@ -201,7 +222,7 @@ def main() -> None:
                     "Max iterations (0 = no limit)",
                     min_value=0,
                     max_value=500,
-                    value=0,
+                    value=10,
                     step=1,
                 )
 
@@ -214,12 +235,12 @@ def main() -> None:
         if mode == "Regular":
             state.bt_submit_disabled = not ready_common
             bt_submit = st.button(
-                "Validate and submit", disabled=state.bt_submit_disabled, key="bt_reg"
+                "Submit", disabled=state.bt_submit_disabled, key="bt_reg"
             )
         else:
             state.bt_iter_disabled = not ready_common
             bt_iter = st.button(
-                "Run iterative enrichment",
+                "Submit",
                 disabled=state.bt_iter_disabled,
                 key="bt_iter",
             )

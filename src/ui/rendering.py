@@ -199,6 +199,7 @@ def render_iter_barchart(result: pd.DataFrame) -> None:
         bar_df,
         x="iteration",
         y="-log10(p-value)",
+        orientation="h",
         hover_data=["term"],
         labels={"iteration": "Iteration", "-log10(p-value)": "-log10(p-value)"},
         title="Iterative Enrichment p-value per Iteration",

@@ -1,5 +1,6 @@
 import base64
 import json
+import re
 import logging
 from pathlib import Path
 from pprint import pformat
@@ -79,3 +80,15 @@ def download_link(val: str, filename: str, extension: str) -> str:
     logger.info(f"Creating download link for file: {filename}.{extension}")
     b64 = base64.b64encode(val.encode("utf-8"))
     return f'<a href="data:application/octet-stream;base64,{b64.decode()}" download="{filename}.{extension}">{extension}</a>'
+
+
+def sanitize_id(raw: str) -> str:
+    """
+    Convert raw label into a valid DOT node ID: replace non-alphanumeric with underscores.
+    Collapse multiple underscores and strip leading/trailing underscores.
+    """
+    # replace non-word characters with underscore
+    s = re.sub(r"\W+", "_", raw)
+    # collapse underscores
+    s = re.sub(r"_+", "_", s)
+    return s.strip("_")
