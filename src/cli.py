@@ -3,10 +3,10 @@ from typing import List, Optional
 
 import typer
 
+from src.background_gene_set import BackgroundGeneSet
 from src.enrichment import Enrichment
 from src.gene_set import GeneSet
 from src.gene_set_library import GeneSetLibrary
-from src.background_gene_set import BackgroundGeneSet
 
 ROOT = Path(__file__).resolve().parent.parent
 app = typer.Typer()

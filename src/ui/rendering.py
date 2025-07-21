@@ -2,8 +2,8 @@ import logging
 from math import log10
 from typing import Dict, List
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import plotly.express as px
 import streamlit as st
 from streamlit import session_state as state
@@ -148,6 +148,7 @@ def render_validation() -> None:
                     hide_index=True,
                 )
 
+
 def render_iter_table(result: pd.DataFrame) -> None:
     """
     Render a styled DataFrame of iterative enrichment results.
@@ -158,7 +159,7 @@ def render_iter_table(result: pd.DataFrame) -> None:
     logger.info("Rendering iterative results table.")
 
     # Rename 'genes' column for clarity
-    df = result.rename(columns={'genes': 'Genes removed'})
+    df = result.rename(columns={"genes": "Genes removed"})
 
     # Apply custom formatting to p-value column
     def custom_format(n):
@@ -166,16 +167,16 @@ def render_iter_table(result: pd.DataFrame) -> None:
             return f"{n:.3f}"
         return f"{n:.2e}"
 
-    styled = df.style.format({'p-value': custom_format})
+    styled = df.style.format({"p-value": custom_format})
 
     st.dataframe(
         styled,
         use_container_width=True,
         column_config={
-            'term': 'Term',
-            'p-value': 'P-value',
-            'Genes removed': 'Genes removed'
-        }
+            "term": "Term",
+            "p-value": "P-value",
+            "Genes removed": "Genes removed",
+        },
     )
 
 
@@ -189,16 +190,18 @@ def render_iter_barchart(result: pd.DataFrame) -> None:
     logger.info("Rendering iterative bar chart.")
 
     # Prepare bar plot data
-    bar_df = result.reset_index()[['iteration', 'term', 'p-value']].copy()
-    bar_df['-log10(p-value)'] = bar_df['p-value'].apply(lambda x: -log10(x) if x and x > 0 else None)
+    bar_df = result.reset_index()[["iteration", "term", "p-value"]].copy()
+    bar_df["-log10(p-value)"] = bar_df["p-value"].apply(
+        lambda x: -log10(x) if x and x > 0 else None
+    )
 
     fig = px.bar(
         bar_df,
-        x='iteration',
-        y='-log10(p-value)',
-        hover_data=['term'],
-        labels={'iteration': 'Iteration', '-log10(p-value)': '-log10(p-value)'},
-        title='Iterative Enrichment p-value per Iteration'
+        x="iteration",
+        y="-log10(p-value)",
+        hover_data=["term"],
+        labels={"iteration": "Iteration", "-log10(p-value)": "-log10(p-value)"},
+        title="Iterative Enrichment p-value per Iteration",
     )
     st.plotly_chart(fig, use_container_width=True)
 
@@ -219,7 +222,7 @@ def render_iter_results(result: IterativeEnrichment, file_name: str) -> None:
 
     # Tabs for table and chart
     table_tab, bar_tab = st.tabs(["Iterations", "Bar chart"])
-    df = result.to_dataframe().set_index('iteration')
+    df = result.to_dataframe().set_index("iteration")
 
     with table_tab:
         render_iter_table(df)
@@ -231,7 +234,7 @@ def render_iter_results(result: IterativeEnrichment, file_name: str) -> None:
     st.markdown(
         f'Download iterative results as {download_link(result.to_tsv(), file_name, "tsv")}, '
         f'{download_link(result.to_json(), file_name, "json")}',
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
 
@@ -252,5 +255,5 @@ def render_network(dot: str, title: str = "Iterative Enrichment Network") -> Non
     # Offer DOT download
     st.markdown(
         f'Download network graph as {download_link(dot, "iterative_network", "dot")}',
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
