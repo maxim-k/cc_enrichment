@@ -2,12 +2,12 @@ import logging
 from math import log10
 from typing import Dict, List
 
-import numpy as np
 import networkx as nx
-import plotly.graph_objects as go
-import pydot
+import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
+import pydot
 import streamlit as st
 from streamlit import session_state as state
 
@@ -241,57 +241,112 @@ def render_iter_results(result: IterativeEnrichment, file_name: str) -> None:
         unsafe_allow_html=True,
     )
 
-def convert_dot_plotly(merged_dot: str) -> None:
-    graphs = pydot.graph_from_dot_data(merged_dot)
+
+def dot_to_plotly(
+    dot_input: str,
+    node_size: int = 10,
+    edge_width: int = 1,
+    layout_k: float = 1.0,
+    layout_iterations: int = 100,
+) -> go.Figure:
+    """
+    Convert a DOT file into an interactive Plotly network figure.
+
+    Parameters:
+    - dot_input: path to the .dot file
+    - node_size: base marker size for nodes
+    - edge_width: line width for edges
+    - layout_k: optimal distance between nodes for spring layout
+    - layout_iterations: iterations for force-directed layout
+
+    Returns:
+    - fig: plotly.graph_objects.Figure
+    """
+    # 1. Parse DOT with pydot
+    try:
+        graphs = pydot.graph_from_dot_data(dot_input)
+    except pydot.PydotException as e:
+        raise ValueError(f"Failed to parse DOT data: {dot_input!r}") from e
+    if not graphs:
+        raise ValueError(f"Failed to parse DOT data: {dot_input!r}")
+
     dot = graphs[0]
 
+    # 2. Convert to NetworkX graph
     G = nx.Graph()
     for node in dot.get_nodes():
         name = node.get_name().strip('"')
-        label = node.get_attributes().get('label', name)
-        G.add_node(name, label=label)
+        # skip meta or empty nodes
+        if not name or name.lower() == "node" or name.lower() == "graph":
+            continue
+        attrs = node.get_attributes() or {}
+        label = attrs.get("label", name).strip('"')
+        raw = attrs.get("fillcolor")
+        color = raw.strip('"') if raw else "#888888"
+        G.add_node(name, label=label, color=color)
     for edge in dot.get_edges():
         src = edge.get_source().strip('"')
         dst = edge.get_destination().strip('"')
-        G.add_edge(src, dst)
+        if src and dst and G.has_node(src) and G.has_node(dst):
+            G.add_edge(src, dst)
 
-    # Use spring layout
-    pos = nx.spring_layout(G)
+    # 3. Compute positions with force-directed layout
+    pos = nx.spring_layout(
+        G,
+        k=0.5,
+        iterations=layout_iterations,
+    )
 
+    # 4. Build edge trace
     edge_x, edge_y = [], []
-    for e in G.edges():
-        x0, y0 = pos[e[0]]
-        x1, y1 = pos[e[1]]
+    for u, v in G.edges():
+        x0, y0 = pos[u]
+        x1, y1 = pos[v]
         edge_x += [x0, x1, None]
         edge_y += [y0, y1, None]
-
     edge_trace = go.Scatter(
-        x=edge_x, y=edge_y,
-        line=dict(width=1),  # increase for bolder
-        mode='lines',
-        hoverinfo='none'
+        x=edge_x,
+        y=edge_y,
+        mode="lines",
+        line=dict(width=edge_width, color="rgba(150,150,150,0.5)"),
+        hoverinfo="none",
     )
 
-    node_x, node_y, text = [], [], []
-    for n in G.nodes(data=True):
-        x, y = pos[n[0]]
+    # 5. Build node trace
+    node_x, node_y, node_text, node_color = [], [], [], []
+    for n, data in G.nodes(data=True):
+        x, y = pos[n]
         node_x.append(x)
         node_y.append(y)
-        text.append(n[1]['label'])
+        node_text.append(data.get("label", n))
+        # use fillcolor if provided, else default
+        fill = data.get("color")
+        node_color.append(fill if fill else "rgba(50,50,250,0.6)")
 
     node_trace = go.Scatter(
-        x=node_x, y=node_y,
-        mode='markers+text',
-        marker=dict(size=12),  # increase for bigger nodes
-        text=text,
-        textposition='top center'
+        x=node_x,
+        y=node_y,
+        mode="markers+text",
+        text=node_text,
+        textposition="top center",
+        marker=dict(
+            size=node_size,
+            color=node_color,
+            opacity=0.6,
+            line=dict(width=1, color="rgba(0,0,0,0.2)"),
+        ),
+        hoverinfo="text",
     )
 
+    # 6. Assemble figure
     fig = go.Figure(data=[edge_trace, node_trace])
     fig.update_layout(
-        showlegend=False,
-        margin=dict(l=0, r=0, t=0, b=0)
+        margin=dict(l=0, r=0, t=0, b=0),
+        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        plot_bgcolor="white",
     )
+    return fig
 
 
 def render_network(dot: str, title: str = "Iterative Enrichment Network") -> None:
@@ -309,7 +364,7 @@ def render_network(dot: str, title: str = "Iterative Enrichment Network") -> Non
     st.subheader(title)
     # st.graphviz_chart(dot, use_container_width=True)
 
-    st.plotly_chart(convert_dot_plotly(dot), use_container_width=True)
+    st.plotly_chart(dot_to_plotly(dot), use_container_width=True)
     # Offer DOT download
     st.markdown(
         f'Download network graph as {download_link(dot, "iterative_network", "dot")}',

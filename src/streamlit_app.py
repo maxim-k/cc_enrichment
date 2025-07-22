@@ -146,6 +146,7 @@ def main() -> None:
     mode = st.radio(
         "Mode",
         ["Regular", "Iterative"],
+        index=1,
         horizontal=True,
         key="analysis_mode",
     )
@@ -405,17 +406,6 @@ def main() -> None:
             per_lib_dots=state.iter_dot,
             colors=state.iter_colors,
         )
-        render_network(merged)
-        state.iter_ready = False
-    if mode == "Iterative" and state.iter_ready:
-        combined = _build_iterative_tables_download(state.iter_results)
-        st.markdown(
-            f"Download iterative results as {download_link(combined,'iterative_results','tsv')}",
-            unsafe_allow_html=True,
-        )
-        for lib, recs in state.iter_results.items():
-            render_iter_results(recs, lib)
-        merged = _merge_iterative_dot(state.iter_graph_parts)
         render_network(merged)
         state.iter_ready = False
 
