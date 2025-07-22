@@ -244,9 +244,9 @@ def render_iter_results(result: IterativeEnrichment, file_name: str) -> None:
 
 def dot_to_plotly(
     dot_input: str,
-    node_size: int = 10,
+    node_size: int = 7,
     edge_width: int = 1,
-    layout_k: float = 1.0,
+    layout_k: float = 0.7,
     layout_iterations: int = 100,
 ) -> go.Figure:
     """
@@ -293,7 +293,7 @@ def dot_to_plotly(
     # 3. Compute positions with force-directed layout
     pos = nx.spring_layout(
         G,
-        k=0.5,
+        k=layout_k,
         iterations=layout_iterations,
     )
 
@@ -332,7 +332,7 @@ def dot_to_plotly(
         marker=dict(
             size=node_size,
             color=node_color,
-            opacity=0.6,
+            opacity=0.7,
             line=dict(width=1, color="rgba(0,0,0,0.2)"),
         ),
         hoverinfo="text",
@@ -345,6 +345,9 @@ def dot_to_plotly(
         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
         plot_bgcolor="white",
+        autosize=False,
+        width=1000,
+        height=1000,
     )
     return fig
 
