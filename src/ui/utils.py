@@ -1,7 +1,7 @@
 import base64
 import json
-import re
 import logging
+import re
 from pathlib import Path
 from pprint import pformat
 from typing import Dict

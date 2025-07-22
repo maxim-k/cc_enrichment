@@ -23,7 +23,7 @@ from src.ui.rendering import (
     render_results,
     render_validation,
 )
-from src.ui.utils import download_link, update_aliases, sanitize_id
+from src.ui.utils import download_link, sanitize_id, update_aliases
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -61,50 +61,60 @@ def _build_iterative_tables_download(all_iter_results: Dict[str, List[dict]]) ->
     return "\n".join(rows)
 
 
-def _merge_iterative_dot(per_lib_parts: Dict[str, Dict]) -> str:
+def _merge_iterative_dot(per_lib_dots: Dict[str, str], colors: Dict[str, str]) -> str:
     """
-    Merge per-library DOT fragments into a single graph,
-    sanitizing and semicolon-terminating all statements,
-    deduplicating nodes and edges, and including a legend cluster.
+    Merge per-library DOT outputs into a single graph,
+    deduplicating nodes and edges, and building a legend.
     """
     lines = [
         "graph iterative_enrichment_all {",
-        "  graph [layout=neato, overlap=false];",
-        "  node [shape=ellipse, fontname=\"Helvetica\"];"
+        "  graph [layout=neato, overlap=false, penwidth=2];",
+        '  node [shape=ellipse, fontname="Helvetica", width=1.2, height=0.6, fixedsize=true];',
     ]
-    # Legend cluster with semicolons
+
+    # Legend cluster
     lines.append("  subgraph cluster_legend {")
     lines.append('    label="Legend";')
-    for idx, (lib, parts) in enumerate(per_lib_parts.items(), start=1):
-        color = parts["color"]
+    for lib, color in colors.items():
         legend_id = sanitize_id(f"legend_{lib}")
         lines.append(
             f'    "{legend_id}" [label="{lib}", shape=box, style=filled, fillcolor="{color}", fontcolor="white"];'
         )
     lines.append("  }")
 
-    # Collect all unique nodes and edges
     seen_nodes = set()
     seen_edges = set()
-    for parts in per_lib_parts.values():
-        for n in parts["nodes_term"].union(parts["nodes_gene"]):
-            # Ensure node statement ends with semicolon
-            stmt = n.rstrip(';') + ';'
-            seen_nodes.add(stmt)
-        for e in parts["edges"]:
-            stmt = e.rstrip(';') + ';'
-            seen_edges.add(stmt)
 
-    # Append nodes and edges
+    # Parse each library's DOT
+    for dot_str in per_lib_dots.values():
+        for raw_line in dot_str.splitlines():
+            line = raw_line.strip()
+            # Skip headers, subgraph, and closing brace
+            if line.startswith("graph ") or line.startswith("}"):
+                continue
+            if (
+                line.startswith("subgraph ")
+                or line.startswith("label=")
+                or line.startswith("node [")
+                or line.startswith("graph [")
+            ):
+                continue
+            if not line.endswith(";"):
+                continue
+            # Classify
+            if "--" in line:
+                seen_edges.add(line)
+            else:
+                seen_nodes.add(line)
+
+    # Append nodes then edges
     for stmt in sorted(seen_nodes):
-        # Quote IDs inside if needed are assumed sanitized already
         lines.append(f"  {stmt}")
     for stmt in sorted(seen_edges):
         lines.append(f"  {stmt}")
 
     lines.append("}")
     return "\n".join(lines)
-
 
 
 # static palette reused
@@ -349,7 +359,15 @@ def main() -> None:
             # clear prior iterative objects/results
             state.iter_enrich = {}
             state.iter_results.clear()
-            state.iter_graph_parts.clear()
+            state.iter_dot = {}
+            state.iter_colors = {}
+
+            # --- Inside your enrichment block in streamlit_app.py ---
+            state.iter_enrich = {}
+            # state.iter_results remains untouched (used elsewhere)
+            state.iter_dot.clear()
+            state.iter_colors.clear()
+
             with st.spinner("Running iterative enrichment"):
                 for idx, gsl in enumerate(state.gene_set_libraries):
                     color = _PALETTE[idx % len(_PALETTE)]
@@ -363,30 +381,14 @@ def main() -> None:
                             None if state.iter_max_iter == 0 else state.iter_max_iter
                         ),
                     )
-                    # store enrichment object
+                    # store enrichment object and results
                     state.iter_enrich[gsl.name] = it
-                    recs = it.results
-                    state.iter_results[gsl.name] = recs
-                    # build graph parts
-                    state.iter_graph_parts[gsl.name] = {
-                        "nodes_term": set(),
-                        "nodes_gene": set(),
-                        "edges": set(),
-                        "color": color,
-                    }
-                    for rec in recs:
-                        term_id = f"term_{gsl.name}_{rec['iteration']}"
-                        state.iter_graph_parts[gsl.name]["nodes_term"].add(
-                            f'{term_id} [label="{rec["term"]} (it {rec["iteration"]})", style=filled, fillcolor="{color}", fontcolor="white"]'
-                        )
-                        for gene in rec["genes"]:
-                            gid = f"gene_{gene}"
-                            state.iter_graph_parts[gsl.name]["nodes_gene"].add(
-                                f'{gid} [label="{gene}"]'
-                            )
-                            state.iter_graph_parts[gsl.name]["edges"].add(
-                                f"{gid} -- {term_id}"
-                            )
+                    state.iter_results[gsl.name] = it.results  # unchanged
+                    state.iter_colors[gsl.name] = color
+
+                    # delegate DOT generation to the tested method
+                    state.iter_dot[gsl.name] = it.to_dot()
+
             state.iter_ready = True
 
     # Iterative rendering
@@ -399,7 +401,10 @@ def main() -> None:
         # render using render_iter_results with Enrichment object
         for lib, it in state.iter_enrich.items():
             render_iter_results(it, lib)
-        merged = _merge_iterative_dot(state.iter_graph_parts)
+        merged = _merge_iterative_dot(
+            per_lib_dots=state.iter_dot,
+            colors=state.iter_colors,
+        )
         render_network(merged)
         state.iter_ready = False
     if mode == "Iterative" and state.iter_ready:

@@ -252,7 +252,7 @@ def render_network(dot: str, title: str = "Iterative Enrichment Network") -> Non
 
     st.divider()
     st.subheader(title)
-    st.graphviz_chart(dot)
+    st.graphviz_chart(dot, use_container_width=True)
     # Offer DOT download
     st.markdown(
         f'Download network graph as {download_link(dot, "iterative_network", "dot")}',
