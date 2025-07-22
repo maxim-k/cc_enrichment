@@ -3,6 +3,9 @@ from math import log10
 from typing import Dict, List
 
 import numpy as np
+import networkx as nx
+import plotly.graph_objects as go
+import pydot
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -238,6 +241,58 @@ def render_iter_results(result: IterativeEnrichment, file_name: str) -> None:
         unsafe_allow_html=True,
     )
 
+def convert_dot_plotly(merged_dot: str) -> None:
+    graphs = pydot.graph_from_dot_data(merged_dot)
+    dot = graphs[0]
+
+    G = nx.Graph()
+    for node in dot.get_nodes():
+        name = node.get_name().strip('"')
+        label = node.get_attributes().get('label', name)
+        G.add_node(name, label=label)
+    for edge in dot.get_edges():
+        src = edge.get_source().strip('"')
+        dst = edge.get_destination().strip('"')
+        G.add_edge(src, dst)
+
+    # Use spring layout
+    pos = nx.spring_layout(G)
+
+    edge_x, edge_y = [], []
+    for e in G.edges():
+        x0, y0 = pos[e[0]]
+        x1, y1 = pos[e[1]]
+        edge_x += [x0, x1, None]
+        edge_y += [y0, y1, None]
+
+    edge_trace = go.Scatter(
+        x=edge_x, y=edge_y,
+        line=dict(width=1),  # increase for bolder
+        mode='lines',
+        hoverinfo='none'
+    )
+
+    node_x, node_y, text = [], [], []
+    for n in G.nodes(data=True):
+        x, y = pos[n[0]]
+        node_x.append(x)
+        node_y.append(y)
+        text.append(n[1]['label'])
+
+    node_trace = go.Scatter(
+        x=node_x, y=node_y,
+        mode='markers+text',
+        marker=dict(size=12),  # increase for bigger nodes
+        text=text,
+        textposition='top center'
+    )
+
+    fig = go.Figure(data=[edge_trace, node_trace])
+    fig.update_layout(
+        showlegend=False,
+        margin=dict(l=0, r=0, t=0, b=0)
+    )
+
 
 def render_network(dot: str, title: str = "Iterative Enrichment Network") -> None:
     """
@@ -252,7 +307,9 @@ def render_network(dot: str, title: str = "Iterative Enrichment Network") -> Non
 
     st.divider()
     st.subheader(title)
-    st.graphviz_chart(dot, use_container_width=True)
+    # st.graphviz_chart(dot, use_container_width=True)
+
+    st.plotly_chart(convert_dot_plotly(dot), use_container_width=True)
     # Offer DOT download
     st.markdown(
         f'Download network graph as {download_link(dot, "iterative_network", "dot")}',
