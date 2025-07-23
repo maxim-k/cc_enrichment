@@ -9,3 +9,5 @@ venv
 results
 sandbox.py
 .vscode
+data/libraries/*
+!data/libraries/alias.json
