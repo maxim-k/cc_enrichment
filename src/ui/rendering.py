@@ -224,20 +224,25 @@ def render_iter_results(result: IterativeEnrichment, file_name: str) -> None:
 
     # Tabs for table and chart
     table_tab, bar_tab = st.tabs(["Iterations", "Bar chart"])
-    df = result.to_dataframe().set_index("iteration")
+    df = result.to_dataframe()
 
-    with table_tab:
-        render_iter_table(df)
+    if df.empty or "iteration" not in df.columns:
+        logger.warning("No iterative enrichment results.")
+        st.warning("No iterative enrichment results.")
+    else:
+        df = df.set_index("iteration")
+        with table_tab:
+            render_iter_table(df)
 
-    with bar_tab:
-        render_iter_barchart(df)
+        with bar_tab:
+            render_iter_barchart(df)
 
-    # Download links
-    st.markdown(
-        f'Download iterative results as {download_link(result.to_tsv(), file_name, "tsv")}, '
-        f'{download_link(result.to_json(), file_name, "json")}',
-        unsafe_allow_html=True,
-    )
+        # Download links
+        st.markdown(
+            f'Download iterative results as {download_link(result.to_tsv(), file_name, "tsv")}, '
+            f'{download_link(result.to_json(), file_name, "json")}',
+            unsafe_allow_html=True,
+        )
 
 
 def render_network(dot: str, title: str = "Iterative Enrichment Network") -> None:

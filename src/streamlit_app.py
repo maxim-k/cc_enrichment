@@ -327,6 +327,7 @@ def main() -> None:
         # render using render_iter_results with Enrichment object
         for lib, it in state.iter_enrich.items():
             render_iter_results(it, lib)
+        # TODO: move to `rendering.py`
         merged_dot = merge_iterative_dot(state.iter_dot)
         render_network(merged_dot)
         state.iter_ready = False
