@@ -66,11 +66,11 @@ def main() -> None:
     logger.info("Starting the Streamlit app")
     st.sidebar.image(
         Image.open(ROOT / "src" / "static" / "logo.png"),
-        caption="Crystal Clear Enrichment Analysis",
+        caption="Iterative Enrichment Analysis",
     )
     st.sidebar.title("Enrichment analysis")
     st.sidebar.write(
-        """This Streamlit app allows users to submit a list of genes and perform enrichment analysis using Gene Ontology pathways. The app displays enriched pathways and GO terms for the submitted genes, along with relevant statistics such as p-values and FDR corrections."""
+        """This app tests the input gene list against selected pathway libraries and iteratively removes genes from the top hit at each step. The process stops when no term passes the p-value cutoff. Results include a ranked table, bar chart, and network graph that highlight both primary and secondary signals."""
     )
 
     _ensure_base_state()
