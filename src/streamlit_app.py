@@ -15,6 +15,7 @@ from src.enrichment import Enrichment
 from src.gene_set import GeneSet
 from src.gene_set_library import GeneSetLibrary
 from src.iter_enrichment import IterativeEnrichment
+from src.ui.dot_utils import merge_iterative_dot
 from src.ui.helpers import input_example, update_text_widgets
 from src.ui.processing import collect_results
 from src.ui.rendering import (
@@ -23,7 +24,7 @@ from src.ui.rendering import (
     render_results,
     render_validation,
 )
-from src.ui.utils import download_link, sanitize_id, update_aliases
+from src.ui.utils import download_link, update_aliases
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -59,75 +60,6 @@ def _build_iterative_tables_download(all_iter_results: Dict[str, List[dict]]) ->
                 f"{(-math.log10(p) if p and p>0 else '')}\t{','.join(rec.get('genes', []))}"
             )
     return "\n".join(rows)
-
-
-def _merge_iterative_dot(per_lib_dots: Dict[str, str], colors: Dict[str, str]) -> str:
-    """
-    Merge per-library DOT outputs into a single graph,
-    deduplicating nodes and edges, and building a legend.
-    """
-    lines = [
-        "graph iterative_enrichment_all {",
-        "  graph [layout=neato, overlap=false, penwidth=2];",
-        '  node [shape=ellipse, fontname="Helvetica", width=1.2, height=0.6, fixedsize=true];',
-    ]
-
-    # Legend cluster
-    lines.append("  subgraph cluster_legend {")
-    lines.append('    label="Legend";')
-    for lib, color in colors.items():
-        legend_id = sanitize_id(f"legend_{lib}")
-        lines.append(
-            f'    "{legend_id}" [label="{lib}", shape=box, style=filled, fillcolor="{color}", fontcolor="white"];'
-        )
-    lines.append("  }")
-
-    seen_nodes = set()
-    seen_edges = set()
-
-    # Parse each library's DOT
-    for dot_str in per_lib_dots.values():
-        for raw_line in dot_str.splitlines():
-            line = raw_line.strip()
-            # Skip headers, subgraph, and closing brace
-            if line.startswith("graph ") or line.startswith("}"):
-                continue
-            if (
-                line.startswith("subgraph ")
-                or line.startswith("label=")
-                or line.startswith("node [")
-                or line.startswith("graph [")
-            ):
-                continue
-            if not line.endswith(";"):
-                continue
-            # Classify
-            if "--" in line:
-                seen_edges.add(line)
-            else:
-                seen_nodes.add(line)
-
-    # Append nodes then edges
-    for stmt in sorted(seen_nodes):
-        lines.append(f"  {stmt}")
-    for stmt in sorted(seen_edges):
-        lines.append(f"  {stmt}")
-
-    lines.append("}")
-    return "\n".join(lines)
-
-
-# static palette reused
-_PALETTE = [
-    "#1b9e77",
-    "#d95f02",
-    "#7570b3",
-    "#e7298a",
-    "#66a61e",
-    "#e6ab02",
-    "#a6761d",
-    "#666666",
-]
 
 
 def main() -> None:
@@ -361,17 +293,13 @@ def main() -> None:
             state.iter_enrich = {}
             state.iter_results.clear()
             state.iter_dot = {}
-            state.iter_colors = {}
 
             # --- Inside your enrichment block in streamlit_app.py ---
             state.iter_enrich = {}
-            # state.iter_results remains untouched (used elsewhere)
             state.iter_dot.clear()
-            state.iter_colors.clear()
 
             with st.spinner("Running iterative enrichment"):
-                for idx, gsl in enumerate(state.gene_set_libraries):
-                    color = _PALETTE[idx % len(_PALETTE)]
+                for gsl in state.gene_set_libraries:
                     it = IterativeEnrichment(
                         gene_set=state.gene_set,
                         gene_set_library=gsl,
@@ -385,10 +313,7 @@ def main() -> None:
                     # store enrichment object and results
                     state.iter_enrich[gsl.name] = it
                     state.iter_results[gsl.name] = it.results  # unchanged
-                    state.iter_colors[gsl.name] = color
-
-                    # delegate DOT generation to the tested method
-                    state.iter_dot[gsl.name] = it.to_dot()
+                    state.iter_dot[gsl.name] = it.to_dot()  # unchanged
 
             state.iter_ready = True
 
@@ -402,11 +327,8 @@ def main() -> None:
         # render using render_iter_results with Enrichment object
         for lib, it in state.iter_enrich.items():
             render_iter_results(it, lib)
-        merged = _merge_iterative_dot(
-            per_lib_dots=state.iter_dot,
-            colors=state.iter_colors,
-        )
-        render_network(merged)
+        merged_dot = merge_iterative_dot(state.iter_dot)
+        render_network(merged_dot)
         state.iter_ready = False
 
     logger.info("Finishing the Streamlit app")

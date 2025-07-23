@@ -176,9 +176,6 @@ class IterativeEnrichment:
             s = re.sub(r"_+", "_", s)
             return s.strip("_")
 
-        palette: List[str] = ["#1b9e77", "#d95f02", "#7570b3", "#e7298a", "#66a61e"]
-        lib_color = palette[0]
-
         nodes: Set[str] = set()
         edges: Set[str] = set()
 
@@ -191,7 +188,7 @@ class IterativeEnrichment:
             term_node = (
                 f'"{term_id}" '
                 f'[label="{term_label} (it {rec["iteration"]})", '
-                f'style=filled, fillcolor="{lib_color}", fontcolor="white"];'
+                f'style=filled, fontcolor="white"];'
             )
             nodes.add(term_node)
 

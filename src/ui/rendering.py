@@ -1,18 +1,15 @@
 import logging
 from math import log10
-from typing import Dict, List
 
-import networkx as nx
 import numpy as np
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
-import pydot
 import streamlit as st
 from streamlit import session_state as state
 
 from src.enrichment import Enrichment
 from src.iter_enrichment import IterativeEnrichment
+from src.ui.dot_utils import dot_to_plotly
 from src.ui.utils import download_link
 
 logging.basicConfig(
@@ -240,116 +237,6 @@ def render_iter_results(result: IterativeEnrichment, file_name: str) -> None:
         f'{download_link(result.to_json(), file_name, "json")}',
         unsafe_allow_html=True,
     )
-
-
-def dot_to_plotly(
-    dot_input: str,
-    node_size: int = 7,
-    edge_width: int = 1,
-    layout_k: float = 0.7,
-    layout_iterations: int = 100,
-) -> go.Figure:
-    """
-    Convert a DOT file into an interactive Plotly network figure.
-
-    Parameters:
-    - dot_input: path to the .dot file
-    - node_size: base marker size for nodes
-    - edge_width: line width for edges
-    - layout_k: optimal distance between nodes for spring layout
-    - layout_iterations: iterations for force-directed layout
-
-    Returns:
-    - fig: plotly.graph_objects.Figure
-    """
-    # 1. Parse DOT with pydot
-    try:
-        graphs = pydot.graph_from_dot_data(dot_input)
-    except pydot.PydotException as e:
-        raise ValueError(f"Failed to parse DOT data: {dot_input!r}") from e
-    if not graphs:
-        raise ValueError(f"Failed to parse DOT data: {dot_input!r}")
-
-    dot = graphs[0]
-
-    # 2. Convert to NetworkX graph
-    G = nx.Graph()
-    for node in dot.get_nodes():
-        name = node.get_name().strip('"')
-        # skip meta or empty nodes
-        if not name or name.lower() == "node" or name.lower() == "graph":
-            continue
-        attrs = node.get_attributes() or {}
-        label = attrs.get("label", name).strip('"')
-        raw = attrs.get("fillcolor")
-        color = raw.strip('"') if raw else "#888888"
-        G.add_node(name, label=label, color=color)
-    for edge in dot.get_edges():
-        src = edge.get_source().strip('"')
-        dst = edge.get_destination().strip('"')
-        if src and dst and G.has_node(src) and G.has_node(dst):
-            G.add_edge(src, dst)
-
-    # 3. Compute positions with force-directed layout
-    pos = nx.spring_layout(
-        G,
-        k=layout_k,
-        iterations=layout_iterations,
-    )
-
-    # 4. Build edge trace
-    edge_x, edge_y = [], []
-    for u, v in G.edges():
-        x0, y0 = pos[u]
-        x1, y1 = pos[v]
-        edge_x += [x0, x1, None]
-        edge_y += [y0, y1, None]
-    edge_trace = go.Scatter(
-        x=edge_x,
-        y=edge_y,
-        mode="lines",
-        line=dict(width=edge_width, color="rgba(150,150,150,0.5)"),
-        hoverinfo="none",
-    )
-
-    # 5. Build node trace
-    node_x, node_y, node_text, node_color = [], [], [], []
-    for n, data in G.nodes(data=True):
-        x, y = pos[n]
-        node_x.append(x)
-        node_y.append(y)
-        node_text.append(data.get("label", n))
-        # use fillcolor if provided, else default
-        fill = data.get("color")
-        node_color.append(fill if fill else "rgba(50,50,250,0.6)")
-
-    node_trace = go.Scatter(
-        x=node_x,
-        y=node_y,
-        mode="markers+text",
-        text=node_text,
-        textposition="top center",
-        marker=dict(
-            size=node_size,
-            color=node_color,
-            opacity=0.7,
-            line=dict(width=1, color="rgba(0,0,0,0.2)"),
-        ),
-        hoverinfo="text",
-    )
-
-    # 6. Assemble figure
-    fig = go.Figure(data=[edge_trace, node_trace])
-    fig.update_layout(
-        margin=dict(l=0, r=0, t=0, b=0),
-        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-        plot_bgcolor="white",
-        autosize=False,
-        width=1000,
-        height=1000,
-    )
-    return fig
 
 
 def render_network(dot: str, title: str = "Iterative Enrichment Network") -> None:
