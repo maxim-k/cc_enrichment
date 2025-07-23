@@ -190,18 +190,19 @@ def render_iter_barchart(result: pd.DataFrame) -> None:
     logger.info("Rendering iterative bar chart.")
 
     # Prepare bar plot data
-    bar_df = result.reset_index()[["iteration", "term", "p-value"]].copy()
-    bar_df["-log10(p-value)"] = bar_df["p-value"].apply(
+    bar = result.reset_index()[["iteration", "term", "p-value"]].copy()
+    bar["-log10(p-value)"] = bar["p-value"].apply(
         lambda x: -log10(x) if x and x > 0 else None
     )
+    bar = bar.sort_values(by=["p-value"], ascending=False)
 
     fig = px.bar(
-        bar_df,
-        x="iteration",
-        y="-log10(p-value)",
+        bar,
+        x="-log10(p-value)",
+        y="term",
         orientation="h",
-        hover_data=["term"],
-        labels={"iteration": "Iteration", "-log10(p-value)": "-log10(p-value)"},
+        hover_data=["p-value"],
+        labels={"term": "Term", "-log10(p-value)": "-log10(p-value)"},
         title="Iterative Enrichment p-value per Iteration",
     )
     st.plotly_chart(fig, use_container_width=True)
