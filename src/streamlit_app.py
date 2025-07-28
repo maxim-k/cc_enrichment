@@ -46,6 +46,10 @@ def _ensure_base_state():
         state.iter_graph_parts: Dict[str, dict] = {}
     if "results_ready" not in state:
         state.results_ready = False
+    if "iter_min_overlap" not in state:
+        state.iter_min_overlap = 3
+    if "iter_max_term_size" not in state:
+        state.iter_max_term_size = 1000
     if "iter_ready" not in state:
         state.iter_ready = False
 
@@ -124,7 +128,8 @@ def main() -> None:
             )
             st.caption("Specifies the background set of genes...")
             state.libraries = st.multiselect(
-                "Select libraries", state.lib_mapper.keys()
+                "Select libraries", state.lib_mapper.keys(),
+                default=list(state.lib_mapper.keys())
             )
             if state.libraries:
                 state.gene_set_libraries = [
@@ -166,6 +171,18 @@ def main() -> None:
                     min_value=0,
                     max_value=500,
                     value=10,
+                    step=1,
+                )
+                state.iter_min_overlap = st.number_input(
+                    "Minimum overlap with gene set",
+                    min_value=1,
+                    value=3,
+                    step=1,
+                )
+                state.iter_max_term_size = st.number_input(
+                    "Maximum term size",
+                    min_value=1,
+                    value=1000,
                     step=1,
                 )
 
@@ -312,8 +329,13 @@ def main() -> None:
                     )
                     # store enrichment object and results
                     state.iter_enrich[gsl.name] = it
-                    state.iter_results[gsl.name] = it.results  # unchanged
-                    state.iter_dot[gsl.name] = it.to_dot()  # unchanged
+                    state.iter_results[gsl.name] = it.results
+                    state.iter_dot[gsl.name] = it.to_dot()
+                    state.iter_results[gsl.name] = [
+                        rec for rec in state.iter_results[gsl.name]
+                        if len(rec.get("genes", [])) >= state.iter_min_overlap
+                        and len(rec.get("genes", [])) <= state.iter_max_term_size
+                    ]
 
             state.iter_ready = True
 
