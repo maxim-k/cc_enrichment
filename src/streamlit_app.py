@@ -139,6 +139,13 @@ def main() -> None:
                     )
                     for lib in state.libraries
                 ]
+                # filter out oversized terms by max_term_size setting
+                for gsl in state.gene_set_libraries:
+                    filtered_terms = [t for t in gsl.library if t["size"] <= state.iter_max_term_size]
+                    gsl.library = filtered_terms
+                    gsl.num_terms = len(filtered_terms)
+                    gsl.unique_genes = gsl.compute_unique_genes()
+                    gsl.size = len(gsl.unique_genes)
             else:
                 state.gene_set_libraries = []
             if state.background_set:

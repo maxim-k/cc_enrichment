@@ -48,7 +48,7 @@ class GeneSetLibrary:
                 library.append(term)
         return library
 
-    def _compute_unique_genes(self) -> Set[str]:
+    def compute_unique_genes(self) -> Set[str]:
         """
         Compute the set of unique genes in the library.
 
