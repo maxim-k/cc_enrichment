@@ -51,23 +51,24 @@ def _colorize_term_nodes(dot_src: str, hex_color: str) -> str:
     out_lines: List[str] = []
 
     for line in dot_src.splitlines():
+        # Track and style term nodes, then color matching edges
         if 'type="term"' in line and 'fillcolor=' not in line:
+            term_id = line.strip().split()[0].strip('"')
+            colored = [] if 'colored_terms' not in locals() else colored_terms
+            colored_terms = colored + [term_id]
+            # inject fillcolor
             if 'style=filled,' in line:
                 line = line.replace(
                     'style=filled,', f'style=filled, fillcolor="{hex_color}",'
                 )
-            elif 'style=filled' in line:
-                line = line.replace(
-                    'style=filled', f'style=filled, fillcolor="{hex_color}"'
-                )
-            elif 'fontcolor=' in line:
-                line = line.replace(
-                    'fontcolor=', f'fillcolor="{hex_color}", fontcolor='
-                )
             else:
-                idx = line.rfind("]")
-                if idx != -1:
-                    line = line[:idx] + f', fillcolor="{hex_color}"' + line[idx:]
+                idx = line.rfind(']')
+                line = line[:idx] + f', style=filled, fillcolor="{hex_color}"' + line[idx:]
+        elif '--' in line:
+            for t in locals().get('colored_terms', []):
+                if f' -- "{t}"' in line and '[color=' not in line:
+                    line = line.rstrip(';') + f' [color="{hex_color}"];'
+                    break
         out_lines.append(line)
     return "\n".join(out_lines)
 
@@ -150,6 +151,19 @@ def merge_iterative_dot(
             cleaned.append(ln)
     body_lines = cleaned
 
+    # Inject node sizes
+    sized: List[str] = []
+    for ln in body_lines:
+        stripped = ln.strip()
+        # Term nodes: larger size
+        if 'type="term"' in ln and 'fillcolor=' in ln:
+            ln = ln.rstrip('];') + ', width=2, height=2];'
+        # Gene nodes: smaller size
+        elif 'type="gene"' in ln:
+            ln = ln.rstrip('];') + ', width=0.7, height=0.7];'
+        sized.append(ln)
+    body_lines = sized
+
     # 4) Assemble final DOT
     out = ["graph iterative_enrichment_all {"]
     for l in graph_attrs:
@@ -168,7 +182,6 @@ def merge_iterative_dot(
 
 def dot_to_plotly(
     dot_input: str,
-    node_size: int = 7,
     edge_width: int = 1,
     layout_k: float = 0.7,
     layout_iterations: int = 100,
@@ -212,7 +225,8 @@ def dot_to_plotly(
         src = edge.get_source().strip('"')
         dst = edge.get_destination().strip('"')
         if src and dst and G.has_node(src) and G.has_node(dst):
-            G.add_edge(src, dst)
+            ec = edge.get_attributes().get('color')
+            G.add_edge(src, dst, color=ec)
 
     # 3. Compute positions with force-directed layout
     pos = nx.spring_layout(
@@ -228,13 +242,21 @@ def dot_to_plotly(
         x1, y1 = pos[v]
         edge_x += [x0, x1, None]
         edge_y += [y0, y1, None]
-    edge_trace = go.Scatter(
-        x=edge_x,
-        y=edge_y,
-        mode="lines",
-        line=dict(width=edge_width, color="rgba(150,150,150,0.3)"),
-        hoverinfo="none",
-    )
+    edge_traces: List[go.Scatter] = []
+    for u, v, attrs in G.edges(data=True):
+        x0, y0 = pos[u]
+        x1, y1 = pos[v]
+        ec = attrs.get('color', 'rgba(150,150,150,0.3)')
+        ec = ec.strip('"').strip("'")
+        trace = go.Scatter(
+            x=[x0, x1, None], y=[y0, y1, None],
+            mode="lines",
+            opacity=0.7,
+            line=dict(width=edge_width, color=ec),
+            hoverinfo="none",
+            showlegend=False,
+        )
+        edge_traces.append(trace)
 
     # 5. Build node trace
     node_x, node_y, node_text, node_color = [], [], [], []
@@ -247,14 +269,16 @@ def dot_to_plotly(
         fill = data.get("color")
         node_color.append(fill if fill else "rgba(50,50,250,0.6)")
 
+    node_sizes: List[float] = []
+    for n, data in G.nodes(data=True):
+        attrs = dot.get_node(f'"{n}"')[0].get_attributes()
+        w = float(attrs.get('width', 1))
+        node_sizes.append(w * 10)
     node_trace = go.Scatter(
-        x=node_x,
-        y=node_y,
-        mode="markers+text",
-        text=node_text,
-        textposition="top center",
+        x=node_x, y=node_y, mode="markers+text",
+        text=node_text, textposition="top center",
         marker=dict(
-            size=node_size,
+            size=node_sizes,
             color=node_color,
             opacity=0.7,
             line=dict(width=1, color="rgba(0,0,0,0.2)"),
@@ -263,7 +287,7 @@ def dot_to_plotly(
     )
 
     # 6. Assemble figure
-    fig = go.Figure(data=[edge_trace, node_trace])
+    fig = go.Figure(data=edge_traces + [node_trace])
     fig.update_layout(
         margin=dict(l=0, r=0, t=0, b=0),
         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
