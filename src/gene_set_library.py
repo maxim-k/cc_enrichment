@@ -44,7 +44,12 @@ class GeneSetLibrary:
         with open(gmt_file_path, "r") as file:
             for line in file:
                 parts = line.strip().split("\t")
-                term = {"name": parts[0], "description": parts[1], "genes": parts[2:], "size": len(parts[2:])}
+                term = {
+                    "name": parts[0],
+                    "description": parts[1],
+                    "genes": parts[2:],
+                    "size": len(parts[2:]),
+                }
                 library.append(term)
         return library
 

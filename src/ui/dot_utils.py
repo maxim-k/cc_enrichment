@@ -52,22 +52,24 @@ def _colorize_term_nodes(dot_src: str, hex_color: str) -> str:
 
     for line in dot_src.splitlines():
         # Track and style term nodes, then color matching edges
-        if 'type="term"' in line and 'fillcolor=' not in line:
+        if 'type="term"' in line and "fillcolor=" not in line:
             term_id = line.strip().split()[0].strip('"')
-            colored = [] if 'colored_terms' not in locals() else colored_terms
+            colored = [] if "colored_terms" not in locals() else colored_terms
             colored_terms = colored + [term_id]
             # inject fillcolor
-            if 'style=filled,' in line:
+            if "style=filled," in line:
                 line = line.replace(
-                    'style=filled,', f'style=filled, fillcolor="{hex_color}",'
+                    "style=filled,", f'style=filled, fillcolor="{hex_color}",'
                 )
             else:
-                idx = line.rfind(']')
-                line = line[:idx] + f', style=filled, fillcolor="{hex_color}"' + line[idx:]
-        elif '--' in line:
-            for t in locals().get('colored_terms', []):
-                if f' -- "{t}"' in line and '[color=' not in line:
-                    line = line.rstrip(';') + f' [color="{hex_color}"];'
+                idx = line.rfind("]")
+                line = (
+                    line[:idx] + f', style=filled, fillcolor="{hex_color}"' + line[idx:]
+                )
+        elif "--" in line:
+            for t in locals().get("colored_terms", []):
+                if f' -- "{t}"' in line and "[color=" not in line:
+                    line = line.rstrip(";") + f' [color="{hex_color}"];'
                     break
         out_lines.append(line)
     return "\n".join(out_lines)
@@ -156,11 +158,11 @@ def merge_iterative_dot(
     for ln in body_lines:
         stripped = ln.strip()
         # Term nodes: larger size
-        if 'type="term"' in ln and 'fillcolor=' in ln:
-            ln = ln.rstrip('];') + ', width=2, height=2];'
+        if 'type="term"' in ln and "fillcolor=" in ln:
+            ln = ln.rstrip("];") + ", width=2, height=2];"
         # Gene nodes: smaller size
         elif 'type="gene"' in ln:
-            ln = ln.rstrip('];') + ', width=0.7, height=0.7];'
+            ln = ln.rstrip("];") + ", width=0.7, height=0.7];"
         sized.append(ln)
     body_lines = sized
 
@@ -225,7 +227,7 @@ def dot_to_plotly(
         src = edge.get_source().strip('"')
         dst = edge.get_destination().strip('"')
         if src and dst and G.has_node(src) and G.has_node(dst):
-            ec = edge.get_attributes().get('color')
+            ec = edge.get_attributes().get("color")
             G.add_edge(src, dst, color=ec)
 
     # 3. Compute positions with force-directed layout
@@ -246,10 +248,11 @@ def dot_to_plotly(
     for u, v, attrs in G.edges(data=True):
         x0, y0 = pos[u]
         x1, y1 = pos[v]
-        ec = attrs.get('color', 'rgba(150,150,150,0.3)')
+        ec = attrs.get("color", "rgba(150,150,150,0.3)")
         ec = ec.strip('"').strip("'")
         trace = go.Scatter(
-            x=[x0, x1, None], y=[y0, y1, None],
+            x=[x0, x1, None],
+            y=[y0, y1, None],
             mode="lines",
             opacity=0.7,
             line=dict(width=edge_width, color=ec),
@@ -272,11 +275,14 @@ def dot_to_plotly(
     node_sizes: List[float] = []
     for n, data in G.nodes(data=True):
         attrs = dot.get_node(f'"{n}"')[0].get_attributes()
-        w = float(attrs.get('width', 1))
+        w = float(attrs.get("width", 1))
         node_sizes.append(w * 10)
     node_trace = go.Scatter(
-        x=node_x, y=node_y, mode="markers+text",
-        text=node_text, textposition="top center",
+        x=node_x,
+        y=node_y,
+        mode="markers+text",
+        text=node_text,
+        textposition="top center",
         marker=dict(
             size=node_sizes,
             color=node_color,

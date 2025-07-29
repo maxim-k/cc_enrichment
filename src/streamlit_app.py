@@ -18,12 +18,8 @@ from src.iter_enrichment import IterativeEnrichment
 from src.ui.dot_utils import merge_iterative_dot
 from src.ui.helpers import input_example, update_text_widgets
 from src.ui.processing import collect_results
-from src.ui.rendering import (
-    render_iter_results,
-    render_network,
-    render_results,
-    render_validation,
-)
+from src.ui.rendering import (render_iter_results, render_network,
+                              render_results, render_validation)
 from src.ui.utils import download_link, update_aliases
 
 logging.basicConfig(
@@ -128,7 +124,8 @@ def main() -> None:
             )
             st.caption("Specifies the background set of genes...")
             state.libraries = st.multiselect(
-                "Select libraries", state.lib_mapper.keys(),
+                "Select libraries",
+                state.lib_mapper.keys(),
                 # default=list(state.lib_mapper.keys())
             )
             if state.libraries:
@@ -141,7 +138,9 @@ def main() -> None:
                 ]
                 # filter out oversized terms by max_term_size setting
                 for gsl in state.gene_set_libraries:
-                    filtered_terms = [t for t in gsl.library if t["size"] <= state.iter_max_term_size]
+                    filtered_terms = [
+                        t for t in gsl.library if t["size"] <= state.iter_max_term_size
+                    ]
                     gsl.library = filtered_terms
                     gsl.num_terms = len(filtered_terms)
                     gsl.unique_genes = gsl.compute_unique_genes()
@@ -339,7 +338,8 @@ def main() -> None:
                     state.iter_results[gsl.name] = it.results
                     state.iter_dot[gsl.name] = it.to_dot()
                     state.iter_results[gsl.name] = [
-                        rec for rec in state.iter_results[gsl.name]
+                        rec
+                        for rec in state.iter_results[gsl.name]
                         if len(rec.get("genes", [])) >= state.iter_min_overlap
                         and len(rec.get("genes", [])) <= state.iter_max_term_size
                     ]
