@@ -129,7 +129,7 @@ def main() -> None:
             st.caption("Specifies the background set of genes...")
             state.libraries = st.multiselect(
                 "Select libraries", state.lib_mapper.keys(),
-                default=list(state.lib_mapper.keys())
+                # default=list(state.lib_mapper.keys())
             )
             if state.libraries:
                 state.gene_set_libraries = [

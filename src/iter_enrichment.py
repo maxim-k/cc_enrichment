@@ -188,13 +188,13 @@ class IterativeEnrichment:
             term_node = (
                 f'"{term_id}" '
                 f'[label="{term_label} (it {rec["iteration"]})", '
-                f'style=filled, fontcolor="white"];'
+                f'style=filled, fontcolor="white", type="term"];'
             )
             nodes.add(term_node)
 
             for gene in rec.get("genes", []):
                 gene_id = _sanitize_id(f"gene_{gene}")
-                gene_node = f'"{gene_id}" [label="{gene}"];'
+                gene_node = f'"{gene_id}" [label="{gene}", type="gene"];'
                 nodes.add(gene_node)
                 # create edge with quoted IDs and semicolon
                 edge = f'"{gene_id}" -- "{term_id}";'

@@ -49,27 +49,25 @@ def _colorize_term_nodes(dot_src: str, hex_color: str) -> str:
     'style=filled, fillcolor="<hex_color>",' only for lines that start with a term node.
     """
     out_lines: List[str] = []
-    prefix = '"term_'
-    needle = "style=filled,"
-    insert = f'style=filled, fillcolor="{hex_color}",'  # trailing comma kept
 
     for line in dot_src.splitlines():
-        stripped = line.lstrip()
-        if stripped.startswith(prefix):
-            if needle in line:
-                line = line.replace(needle, insert)
+        if 'type="term"' in line and 'fillcolor=' not in line:
+            if 'style=filled,' in line:
+                line = line.replace(
+                    'style=filled,', f'style=filled, fillcolor="{hex_color}",'
+                )
+            elif 'style=filled' in line:
+                line = line.replace(
+                    'style=filled', f'style=filled, fillcolor="{hex_color}"'
+                )
+            elif 'fontcolor=' in line:
+                line = line.replace(
+                    'fontcolor=', f'fillcolor="{hex_color}", fontcolor='
+                )
             else:
-                # If for some reason style is missing, just before fontcolor
-                # NOTE: keeping it ultra-simple, not parsing. We try a few fallbacks.
-                if "fontcolor=" in line:
-                    line = line.replace(
-                        "fontcolor=", f'fillcolor="{hex_color}", fontcolor='
-                    )
-                else:
-                    # Last resort: just before closing bracket
-                    idx = line.rfind("]")
-                    if idx != -1:
-                        line = line[:idx] + f', fillcolor="{hex_color}"' + line[idx:]
+                idx = line.rfind("]")
+                if idx != -1:
+                    line = line[:idx] + f', fillcolor="{hex_color}"' + line[idx:]
         out_lines.append(line)
     return "\n".join(out_lines)
 
