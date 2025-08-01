@@ -36,6 +36,8 @@ class IterativeEnrichment:
         gene_set: GeneSet,
         gene_set_library: GeneSetLibrary,
         background_gene_set: BackgroundGeneSet,
+        min_term_size: int = 10,
+        max_term_size: int = 1000,
         p_value_method_name: str = "Fisher's Exact Test",
         name: str = None,
         p_threshold: float = 0.01,
@@ -43,6 +45,8 @@ class IterativeEnrichment:
     ) -> None:
         self.gene_set = gene_set
         self.gene_set_library = gene_set_library
+        self.min_term_size = min_term_size
+        self.max_term_size = max_term_size
         self.background_gene_set = background_gene_set
         self.p_value_method_name: str = p_value_method_name
         self.p_threshold: float = p_threshold
@@ -98,6 +102,8 @@ class IterativeEnrichment:
                 enr = Enrichment(
                     gene_set=current_set,
                     gene_set_library=self.gene_set_library,
+                    min_term_size=self.min_term_size,
+                    max_term_size=self.max_term_size,
                     background_gene_set=self.background_gene_set,
                     p_value_method_name=self.p_value_method_name,
                 )

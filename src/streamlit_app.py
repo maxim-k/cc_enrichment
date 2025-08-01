@@ -21,6 +21,7 @@ from src.ui.processing import collect_results
 from src.ui.rendering import (render_iter_results, render_network,
                               render_results, render_validation)
 from src.ui.utils import download_link, update_aliases
+from src.ui.component import d3_force_graph
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -44,8 +45,10 @@ def _ensure_base_state():
         state.results_ready = False
     if "iter_min_overlap" not in state:
         state.iter_min_overlap = 3
-    if "iter_max_term_size" not in state:
-        state.iter_max_term_size = 1000
+    if "min_term_size" not in state:
+        state.min_term_size = 10
+    if "max_term_size" not in state:
+        state.max_term_size = 1000
     if "iter_ready" not in state:
         state.iter_ready = False
 
@@ -185,12 +188,14 @@ def main() -> None:
                     value=3,
                     step=1,
                 )
-                state.iter_max_term_size = st.number_input(
-                    "Maximum term size",
+                state.iter_min_term_size, state.iter_max_term_size = st.slider(
+                    "Minimum and maximum term size",
                     min_value=1,
-                    value=1000,
-                    step=1,
+                    value=(10, 1000),
+                    step=10,
+                    max_value=5000
                 )
+
 
     col_sub, col_example, _ = st.columns([9, 8, 29])
     ready_common = all(
@@ -327,6 +332,8 @@ def main() -> None:
                         gene_set=state.gene_set,
                         gene_set_library=gsl,
                         background_gene_set=state.background_gene_set,
+                        min_term_size=state.min_term_size,
+                        max_term_size=state.max_term_size,
                         p_value_method_name=state.p_val_method,
                         p_threshold=state.iter_p_threshold,
                         max_iterations=(
@@ -341,7 +348,6 @@ def main() -> None:
                         rec
                         for rec in state.iter_results[gsl.name]
                         if len(rec.get("genes", [])) >= state.iter_min_overlap
-                        and len(rec.get("genes", [])) <= state.iter_max_term_size
                     ]
 
             state.iter_ready = True

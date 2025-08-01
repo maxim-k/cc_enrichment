@@ -49,13 +49,12 @@ def _colorize_term_nodes(dot_src: str, hex_color: str) -> str:
     'style=filled, fillcolor="<hex_color>",' only for lines that start with a term node.
     """
     out_lines: List[str] = []
+    colored_terms: List[str] = []
 
     for line in dot_src.splitlines():
-        # Track and style term nodes, then color matching edges
         if 'type="term"' in line and "fillcolor=" not in line:
             term_id = line.strip().split()[0].strip('"')
-            colored = [] if "colored_terms" not in locals() else colored_terms
-            colored_terms = colored + [term_id]
+            colored_terms.append(term_id)
             # inject fillcolor
             if "style=filled," in line:
                 line = line.replace(
@@ -67,11 +66,12 @@ def _colorize_term_nodes(dot_src: str, hex_color: str) -> str:
                     line[:idx] + f', style=filled, fillcolor="{hex_color}"' + line[idx:]
                 )
         elif "--" in line:
-            for t in locals().get("colored_terms", []):
+            for t in colored_terms:
                 if f' -- "{t}"' in line and "[color=" not in line:
                     line = line.rstrip(";") + f' [color="{hex_color}"];'
                     break
         out_lines.append(line)
+
     return "\n".join(out_lines)
 
 
@@ -180,6 +180,65 @@ def merge_iterative_dot(
 
     out.append("}")
     return "\n".join(out)
+
+def clean_id(s: str) -> str:
+    # pydot sometimes returns quoted names; strip surrounding quotes
+    return s.strip().strip('"')
+
+def parse_dot(dot_input: str) -> dict:
+    graphs = pydot.graph_from_dot_data(dot_input)
+    if not graphs:
+        raise RuntimeError(f"failed to parse DOT data")
+    g = graphs[0]
+
+    nodes = []
+    seen_ids = set()
+    for n in g.get_nodes():
+        name = clean_id(n.get_name())
+        if not name or name in ("graph", "node", "edge"):
+            continue  # skip meta/default entries
+        attrs = {k: v.strip('"') for k, v in n.get_attributes().items()}
+        node_type = attrs.get("type")
+        if not node_type:
+            # fallback inference from name
+            if name.startswith("gene_"):
+                node_type = "gene"
+            elif name.startswith("term_"):
+                node_type = "term"
+            else:
+                continue  # skip unrelated/legend nodes
+        if node_type not in ("gene", "term"):
+            continue
+
+        entry = {
+            "id": name,
+            "type": node_type,
+            "label": attrs.get("label", name),
+        }
+        if node_type == "term" and "fillcolor" in attrs:
+            entry["color"] = attrs["fillcolor"]
+        # avoid duplicates
+        if name in seen_ids:
+            continue
+        seen_ids.add(name)
+        nodes.append(entry)
+
+    links = []
+    for e in g.get_edges():
+        src = clean_id(e.get_source())
+        dst = clean_id(e.get_destination())
+        if not src or not dst:
+            continue
+        attrs = {k: v.strip('"') for k, v in e.get_attributes().items()}
+        link = {
+            "source": src,
+            "target": dst,
+        }
+        if "color" in attrs:
+            link["color"] = attrs["color"]
+        links.append(link)
+
+    return {"nodes": nodes, "links": links}
 
 
 def dot_to_plotly(

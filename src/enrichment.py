@@ -87,6 +87,8 @@ class Enrichment:
         gene_set: GeneSet,
         gene_set_library: GeneSetLibrary,
         background_gene_set: BackgroundGeneSet,
+        min_term_size: int = 10,
+        max_term_size: int = 1000,
         p_value_method_name="Fisher's Exact Test",
         name: str = None,
     ):
@@ -100,12 +102,14 @@ class Enrichment:
         """
         self.gene_set = gene_set
         self.gene_set_library = gene_set_library
+        self.min_term_size = min_term_size
+        self.max_term_size = max_term_size
         self.background_gene_set = background_gene_set
         self.p_value_method_name = p_value_method_name
         self.name = (
             name
             if name
-            else f"{gene_set.name}_{gene_set_library.name}_{background_gene_set.name}_{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            else f"{gene_set.name}_{gene_set_library.name}_{min_term_size}-{max_term_size}_{background_gene_set.name}_{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         )
         self._results: List[Dict[str, Any]] = self._compute_enrichment()
 
@@ -151,7 +155,7 @@ class Enrichment:
                             term,
                             self.p_value_method_name,
                         )
-                        for term in self.gene_set_library.library
+                        for term in self.gene_set_library.library if self.min_term_size <= term["size"] <= self.max_term_size
                     ],
                 )
             except Exception as e:
