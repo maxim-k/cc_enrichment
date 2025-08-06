@@ -59,7 +59,7 @@ def d3_force_graph(json_obj, height=500):
 
         const container = d3.select("#chart");
         const width = container.node().clientWidth || 800;
-        const height = 500;
+        const height = {height};
 
         // tooltip
         const tooltip = d3.select("body")

@@ -9,8 +9,9 @@ from streamlit import session_state as state
 
 from src.enrichment import Enrichment
 from src.iter_enrichment import IterativeEnrichment
-from src.ui.dot_utils import dot_to_plotly
+from src.ui.dot_utils import dot_to_plotly, parse_dot
 from src.ui.utils import download_link
+from src.ui.component import d3_force_graph
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -260,7 +261,11 @@ def render_network(dot: str, title: str = "Iterative Enrichment Network") -> Non
     st.subheader(title)
     # st.graphviz_chart(dot, use_container_width=True)
 
-    st.plotly_chart(dot_to_plotly(dot), use_container_width=True)
+    nt_plotly, nt_d3 = st.tabs(["Plotly", "d3.js"])
+    with nt_plotly:
+        st.plotly_chart(dot_to_plotly(dot), use_container_width=True)
+    with nt_d3:
+        d3_force_graph(parse_dot(dot), height=1000)
     # Offer DOT download
     st.markdown(
         f'Download network graph as {download_link(dot, "iterative_network", "dot")}',
