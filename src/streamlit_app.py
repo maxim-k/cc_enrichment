@@ -51,6 +51,10 @@ def _ensure_base_state():
         state.max_term_size = 1000
     if "iter_ready" not in state:
         state.iter_ready = False
+    if "selected_dot_paths" not in state:
+        state.selected_dot_paths = []
+    if "network_generated" not in state:
+        state.network_generated = False  # flag to prevent clearing after checkbox changes
 
 
 def _build_iterative_tables_download(all_iter_results: Dict[str, List[dict]]) -> str:
@@ -356,16 +360,48 @@ def main() -> None:
     if mode == "Iterative" and state.iter_ready:
         combined = _build_iterative_tables_download(state.iter_results)
         st.markdown(
-            f"Download iterative results as {download_link(combined,'iterative_results','tsv')}",
+            f"Download iterative results as {download_link(combined, 'iterative_results', 'tsv')}",
             unsafe_allow_html=True,
         )
-        # render using render_iter_results with Enrichment object
+
+        # callback to keep checkbox state in session
+        def toggle_library(lib_name):
+            if state[f"use_{lib_name}_in_network"]:
+                if lib_name not in state.selected_dot_paths:
+                    state.selected_dot_paths.append(lib_name)
+            else:
+                if lib_name in state.selected_dot_paths:
+                    state.selected_dot_paths.remove(lib_name)
+
+        # render each library's results with a persistent checkbox
         for lib, it in state.iter_enrich.items():
             render_iter_results(it, lib)
-        # TODO: move to `rendering.py`
-        merged_dot = merge_iterative_dot(state.iter_dot)
-        render_network(merged_dot)
-        state.iter_ready = False
+            state.setdefault(f"use_{lib}_in_network", False)
+            st.checkbox(
+                "Use results in network",
+                key=f"use_{lib}_in_network",
+                on_change=toggle_library,
+                args=(lib,),
+            )
+
+        # Network section
+        st.markdown("---")
+        st.header("Network")
+        if state.selected_dot_paths:
+            st.write("**Selected libraries:**")
+            for sel in state.selected_dot_paths:
+                st.write(f"- {sel}")
+        else:
+            st.write("No libraries selected for network generation.")
+
+        # generate or re-display merged network
+        if st.button("Generate Network"):
+            state.network_generated = True
+            selected_dots = {lib: state.iter_dot[lib] for lib in state.selected_dot_paths}
+            state.last_merged_dot = merge_iterative_dot(selected_dots)
+            render_network(state.last_merged_dot)
+        elif state.network_generated:
+            render_network(state.last_merged_dot)
 
     logger.info("Finishing the Streamlit app")
 

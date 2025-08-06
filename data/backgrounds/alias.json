@@ -1,3 +1,7 @@
-{
-    "file": "hgnc_symbols_2023-01-01.txt"
-}
+[
+    {
+        "name": "HGNC symbols (H. sapiens)",
+        "file": "hgnc_symbols_2023-01-01.txt",
+        "active": true
+    }
+]
