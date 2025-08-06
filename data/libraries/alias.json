@@ -1,36 +1,172 @@
-{
-    "H: Hallmark gene sets": "h.all.v2025.1.Hs.symbols.gmt",
-    "C1: Positional gene sets": "c1.all.v2025.1.Hs.symbols.gmt",
-    "C2: Curated gene sets": "c2.all.v2025.1.Hs.symbols.gmt",
-    "C2: CGP: Chemical & genetic perturbations": "c2.cgp.v2025.1.Hs.symbols.gmt",
-    "C2: CP: Canonical pathways": "c2.cp.v2025.1.Hs.symbols.gmt",
-    "C2: CP: BioCarta": "c2.cp.biocarta.v2025.1.Hs.symbols.gmt",
-    "C2: CP: KEGG MEDICUS": "c2.cp.kegg_medicus.v2025.1.Hs.symbols.gmt",
-    "C2: CP: PID": "c2.cp.pid.v2025.1.Hs.symbols.gmt",
-    "C2: CP: Reactome": "c2.cp.reactome.v2025.1.Hs.symbols.gmt",
-    "C2: CP: WikiPathways": "c2.cp.wikipathways.v2025.1.Hs.symbols.gmt",
-    "C2: CP: KEGG Legacy": "c2.cp.kegg_legacy.v2025.1.Hs.symbols.gmt",
-    "C3: Regulatory target gene sets": "c3.all.v2025.1.Hs.symbols.gmt",
-    "C3: MIR: microRNA targets": "c3.mir.v2025.1.Hs.symbols.gmt",
-    "C3: MIR: miRDB": "c3.mir.mirdb.v2025.1.Hs.symbols.gmt",
-    "C3: MIR: Legacy": "c3.mir.mir_legacy.v2025.1.Hs.symbols.gmt",
-    "C3: TFT: transcription factor targets": "c3.tft.v2025.1.Hs.symbols.gmt",
-    "C3: TFT: GTRD": "c3.tft.gtrd.v2025.1.Hs.symbols.gmt",
-    "C3: TFT: Legacy": "c3.tft.tft_legacy.v2025.1.Hs.symbols.gmt",
-    "C4: Computational gene sets": "c4.all.v2025.1.Hs.symbols.gmt",
-    "C4: 3CA: Curated Cancer Cell Atlas": "c4.3ca.v2025.1.Hs.symbols.gmt",
-    "C4: CGN: Cancer gene neighborhoods": "c4.cgn.v2025.1.Hs.symbols.gmt",
-    "C4: CM: Cancer modules": "c4.cm.v2025.1.Hs.symbols.gmt",
-    "C5: Ontology gene sets": "c5.all.v2025.1.Hs.symbols.gmt",
-    "C5: GO: Gene Ontology": "c5.go.v2025.1.Hs.symbols.gmt",
-    "C5: GO: BP (Biological Process)": "c5.go.bp.v2025.1.Hs.symbols.gmt",
-    "C5: GO: CC (Cellular Component)": "c5.go.cc.v2025.1.Hs.symbols.gmt",
-    "C5: GO: MF (Molecular Function)": "c5.go.mf.v2025.1.Hs.symbols.gmt",
-    "C5: HPO: Human Phenotype Ontology": "c5.hpo.v2025.1.Hs.symbols.gmt",
-    "C6: Oncogenic signatures": "c6.all.v2025.1.Hs.symbols.gmt",
-    "C7: Immunologic signatures": "c7.all.v2025.1.Hs.symbols.gmt",
-    "C7: ImmuneSigDB": "c7.immunesigdb.v2025.1.Hs.symbols.gmt",
-    "C7: VAX: Vaccine response": "c7.vax.v2025.1.Hs.symbols.gmt",
-    "C8: Cell type signatures (scRNA-seq)": "c8.all.v2025.1.Hs.symbols.gmt",
-    "All MSigDB gene sets": "msigdb.v2025.1.Hs.symbols.gmt"
-}
+[
+    {
+        "name": "H: Hallmark gene sets",
+        "file": "h.all.v2025.1.Hs.symbols.gmt",
+        "active": true
+    },
+    {
+        "name": "C1: Positional gene sets",
+        "file": "c1.all.v2025.1.Hs.symbols.gmt",
+        "active": false
+    },
+    {
+        "name": "C2: Curated gene sets",
+        "file": "c2.all.v2025.1.Hs.symbols.gmt",
+        "active": false
+    },
+    {
+        "name": "C2: CGP: Chemical & genetic perturbations",
+        "file": "c2.cgp.v2025.1.Hs.symbols.gmt",
+        "active": false
+    },
+    {
+        "name": "C2: CP: Canonical pathways",
+        "file": "c2.cp.v2025.1.Hs.symbols.gmt",
+        "active": false
+    },
+    {
+        "name": "C2: CP: BioCarta",
+        "file": "c2.cp.biocarta.v2025.1.Hs.symbols.gmt",
+        "active": true
+    },
+    {
+        "name": "C2: CP: KEGG MEDICUS",
+        "file": "c2.cp.kegg_medicus.v2025.1.Hs.symbols.gmt",
+        "active": true
+    },
+    {
+        "name": "C2: CP: PID",
+        "file": "c2.cp.pid.v2025.1.Hs.symbols.gmt",
+        "active": true
+    },
+    {
+        "name": "C2: CP: Reactome",
+        "file": "c2.cp.reactome.v2025.1.Hs.symbols.gmt",
+        "active": true
+    },
+    {
+        "name": "C2: CP: WikiPathways",
+        "file": "c2.cp.wikipathways.v2025.1.Hs.symbols.gmt",
+        "active": true
+    },
+    {
+        "name": "C2: CP: KEGG Legacy",
+        "file": "c2.cp.kegg_legacy.v2025.1.Hs.symbols.gmt",
+        "active": false
+    },
+    {
+        "name": "C3: Regulatory target gene sets",
+        "file": "c3.all.v2025.1.Hs.symbols.gmt",
+        "active": false
+    },
+    {
+        "name": "C3: MIR: microRNA targets",
+        "file": "c3.mir.v2025.1.Hs.symbols.gmt",
+        "active": false
+    },
+    {
+        "name": "C3: MIR: miRDB",
+        "file": "c3.mir.mirdb.v2025.1.Hs.symbols.gmt",
+        "active": false
+    },
+    {
+        "name": "C3: MIR: Legacy",
+        "file": "c3.mir.mir_legacy.v2025.1.Hs.symbols.gmt",
+        "active": false
+    },
+    {
+        "name": "C3: TFT: transcription factor targets",
+        "file": "c3.tft.v2025.1.Hs.symbols.gmt",
+        "active": false
+    },
+    {
+        "name": "C3: TFT: GTRD",
+        "file": "c3.tft.gtrd.v2025.1.Hs.symbols.gmt",
+        "active": false
+    },
+    {
+        "name": "C3: TFT: Legacy",
+        "file": "c3.tft.tft_legacy.v2025.1.Hs.symbols.gmt",
+        "active": false
+    },
+    {
+        "name": "C4: Computational gene sets",
+        "file": "c4.all.v2025.1.Hs.symbols.gmt",
+        "active": false
+    },
+    {
+        "name": "C4: 3CA: Curated Cancer Cell Atlas",
+        "file": "c4.3ca.v2025.1.Hs.symbols.gmt",
+        "active": false
+    },
+    {
+        "name": "C4: CGN: Cancer gene neighborhoods",
+        "file": "c4.cgn.v2025.1.Hs.symbols.gmt",
+        "active": false
+    },
+    {
+        "name": "C4: CM: Cancer modules",
+        "file": "c4.cm.v2025.1.Hs.symbols.gmt",
+        "active": false
+    },
+    {
+        "name": "C5: Ontology gene sets",
+        "file": "c5.all.v2025.1.Hs.symbols.gmt",
+        "active": false
+    },
+    {
+        "name": "C5: GO: Gene Ontology",
+        "file": "c5.go.v2025.1.Hs.symbols.gmt",
+        "active": false
+    },
+    {
+        "name": "C5: GO: BP (Biological Process)",
+        "file": "c5.go.bp.v2025.1.Hs.symbols.gmt",
+        "active": true
+    },
+    {
+        "name": "C5: GO: CC (Cellular Component)",
+        "file": "c5.go.cc.v2025.1.Hs.symbols.gmt",
+        "active": true
+    },
+    {
+        "name": "C5: GO: MF (Molecular Function)",
+        "file": "c5.go.mf.v2025.1.Hs.symbols.gmt",
+        "active": true
+    },
+    {
+        "name": "C5: HPO: Human Phenotype Ontology",
+        "file": "c5.hpo.v2025.1.Hs.symbols.gmt",
+        "active": true
+    },
+    {
+        "name": "C6: Oncogenic signatures",
+        "file": "c6.all.v2025.1.Hs.symbols.gmt",
+        "active": false
+    },
+    {
+        "name": "C7: Immunologic signatures",
+        "file": "c7.all.v2025.1.Hs.symbols.gmt",
+        "active": false
+    },
+    {
+        "name": "C7: ImmuneSigDB",
+        "file": "c7.immunesigdb.v2025.1.Hs.symbols.gmt",
+        "active": false
+    },
+    {
+        "name": "C7: VAX: Vaccine response",
+        "file": "c7.vax.v2025.1.Hs.symbols.gmt",
+        "active": false
+    },
+    {
+        "name": "C8: Cell type signatures (scRNA-seq)",
+        "file": "c8.all.v2025.1.Hs.symbols.gmt",
+        "active": false
+    },
+    {
+        "name": "All MSigDB gene sets",
+        "file": "msigdb.v2025.1.Hs.symbols.gmt",
+        "active": false
+    }
+]

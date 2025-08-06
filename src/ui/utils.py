@@ -17,51 +17,79 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 
 def update_aliases(directory: str, alias_file: str = "alias.json") -> Dict[str, str]:
     """
-    Update the aliases file with the current set of files in the specified directory.
-
-    This function scans a specified directory for files, keeping an 'alias.json' file that contains
-    a mapping of simplified names to actual file names. This allows for easier reference to the files
-    in that directory. If new files are added to the directory, they are added to the 'alias.json'. If files
-    are missing, they are removed from 'alias.json'.
-
-    :param directory: The directory to scan for files.
-    :param alias_file: The name of the alias file, defaults to 'alias.json'
-    :return: A dictionary containing the aliases, with keys being the simplified names and values being the actual file names.
+    Scan the given directory and update alias.json, supporting both the old dict format
+    and the new list-of-dicts format. Returns a mapping of alias -> filename for active entries.
     """
+    logger = logging.getLogger(__name__)
     logger.info(f"Updating aliases for directory: {directory}")
     aliases_path = ROOT / "data" / directory / alias_file
 
-    if Path(aliases_path).is_file():
+    alias_entries = []
+    is_list_format = False
+
+    # Load existing aliases
+    if aliases_path.is_file():
         try:
-            with open(aliases_path, "r") as file:
-                alias = json.load(file)
+            with open(aliases_path, "r") as f:
+                data = json.load(f)
+            if isinstance(data, list):
+                # New format: list of {name, file, active}
+                is_list_format = True
+                alias_entries = data
+            elif isinstance(data, dict):
+                # Old format: simple mapping
+                alias_entries = [
+                    {"name": name, "file": filename, "active": True}
+                    for name, filename in data.items()
+                ]
+            else:
+                logger.warning(f"Unrecognized alias.json format: {type(data)}")
         except (FileNotFoundError, json.JSONDecodeError):
             logger.warning(f"Failed to load aliases from {aliases_path}")
             st.warning(f"Failed to load aliases from {aliases_path}")
 
-    files = [f for f in (ROOT / "data" / directory).iterdir() if f.is_file()]
-
-    # Remove 'alias.json' from the list of files
-    if Path(aliases_path) in files:
-        files.remove(Path(aliases_path))
-
-    # Add a record if a file is not in aliases
-    for file in files:
-        if file.name not in alias.values():
-            alias[file.stem] = file.name
-
-    # Delete a record from aliases if there's no corresponding file
-    aliases_keys_to_delete = [
-        key for key in alias if alias[key] not in [file.name for file in files]
+    # Collect actual files in the directory (excluding the alias file)
+    dir_path = ROOT / "data" / directory
+    files = [
+        f for f in dir_path.iterdir()
+        if f.is_file() and f.name != alias_file
     ]
 
-    for key in aliases_keys_to_delete:
-        del alias[key]
+    # Track existing filenames in entries
+    existing_files = {entry["file"] for entry in alias_entries}
 
-    with open(aliases_path, "w") as file:
-        json.dump(alias, file, indent=4)
-    logger.info(f"{directory}/alias.json\n{pformat(alias)}")
-    return alias
+    # Add new files as active
+    for file in files:
+        if file.name not in existing_files:
+            alias_entries.append({
+                "name": file.stem,
+                "file": file.name,
+                "active": True
+            })
+
+    # Remove entries whose files no longer exist
+    current_files = {f.name for f in files}
+    alias_entries = [
+        entry for entry in alias_entries
+        if entry["file"] in current_files
+    ]
+
+    # Build result mapping for active entries only
+    alias_mapping: Dict[str, str] = {
+        entry["name"]: entry["file"]
+        for entry in alias_entries
+        if entry.get("active", False)
+    }
+
+    # Write back to alias.json in the original format
+    with open(aliases_path, "w") as f:
+        if is_list_format:
+            json.dump(alias_entries, f, indent=4)
+        else:
+            json.dump(alias_mapping, f, indent=4)
+
+    logger.info(f"{directory}/alias.json updated: {alias_mapping}")
+    return alias_mapping
 
 
 def download_link(val: str, filename: str, extension: str) -> str:
