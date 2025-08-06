@@ -155,7 +155,8 @@ class Enrichment:
                             term,
                             self.p_value_method_name,
                         )
-                        for term in self.gene_set_library.library if self.min_term_size <= term["size"] <= self.max_term_size
+                        for term in self.gene_set_library.library
+                        if self.min_term_size <= term["size"] <= self.max_term_size
                     ],
                 )
             except Exception as e:

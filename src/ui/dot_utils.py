@@ -181,9 +181,11 @@ def merge_iterative_dot(
     out.append("}")
     return "\n".join(out)
 
+
 def clean_id(s: str) -> str:
     # pydot sometimes returns quoted names; strip surrounding quotes
     return s.strip().strip('"')
+
 
 def parse_dot(dot_input: str) -> dict:
     graphs = pydot.graph_from_dot_data(dot_input)

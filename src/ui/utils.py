@@ -3,7 +3,6 @@ import json
 import logging
 import re
 from pathlib import Path
-from pprint import pformat
 from typing import Dict
 
 import streamlit as st
@@ -50,10 +49,7 @@ def update_aliases(directory: str, alias_file: str = "alias.json") -> Dict[str, 
 
     # Collect actual files in the directory (excluding the alias file)
     dir_path = ROOT / "data" / directory
-    files = [
-        f for f in dir_path.iterdir()
-        if f.is_file() and f.name != alias_file
-    ]
+    files = [f for f in dir_path.iterdir() if f.is_file() and f.name != alias_file]
 
     # Track existing filenames in entries
     existing_files = {entry["file"] for entry in alias_entries}
@@ -61,18 +57,11 @@ def update_aliases(directory: str, alias_file: str = "alias.json") -> Dict[str, 
     # Add new files as active
     for file in files:
         if file.name not in existing_files:
-            alias_entries.append({
-                "name": file.stem,
-                "file": file.name,
-                "active": True
-            })
+            alias_entries.append({"name": file.stem, "file": file.name, "active": True})
 
     # Remove entries whose files no longer exist
     current_files = {f.name for f in files}
-    alias_entries = [
-        entry for entry in alias_entries
-        if entry["file"] in current_files
-    ]
+    alias_entries = [entry for entry in alias_entries if entry["file"] in current_files]
 
     # Build result mapping for active entries only
     alias_mapping: Dict[str, str] = {

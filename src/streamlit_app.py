@@ -4,6 +4,7 @@ import math
 from io import StringIO
 from pathlib import Path
 from typing import Dict, List, Set
+
 import streamlit as st
 from PIL import Image
 from streamlit import session_state as state
@@ -52,7 +53,9 @@ def _ensure_base_state():
     if "selected_dot_paths" not in state:
         state.selected_dot_paths = []
     if "network_generated" not in state:
-        state.network_generated = False  # flag to prevent clearing after checkbox changes
+        state.network_generated = (
+            False  # flag to prevent clearing after checkbox changes
+        )
 
 
 def _build_iterative_tables_download(all_iter_results: Dict[str, List[dict]]) -> str:
@@ -195,9 +198,8 @@ def main() -> None:
                     min_value=1,
                     value=(10, 1000),
                     step=10,
-                    max_value=5000
+                    max_value=5000,
                 )
-
 
     col_sub, col_example, _ = st.columns([9, 8, 29])
     ready_common = all(
@@ -375,7 +377,8 @@ def main() -> None:
         for lib, it in state.iter_enrich.items():
             # Monkey-patch filtered results
             it.results = [
-                rec for rec in it.results
+                rec
+                for rec in it.results
                 if len(rec.get("genes", [])) >= state.iter_min_overlap
             ]
             render_iter_results(it, lib)
@@ -400,7 +403,9 @@ def main() -> None:
         # generate or re-display merged network
         if st.button("Generate Network"):
             state.network_generated = True
-            selected_dots = {lib: state.iter_dot[lib] for lib in state.selected_dot_paths}
+            selected_dots = {
+                lib: state.iter_dot[lib] for lib in state.selected_dot_paths
+            }
             state.last_merged_dot = merge_iterative_dot(selected_dots)
             render_network(state.last_merged_dot)
         elif state.network_generated:
