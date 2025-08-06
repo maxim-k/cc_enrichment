@@ -4,7 +4,6 @@ import math
 from io import StringIO
 from pathlib import Path
 from typing import Dict, List, Set
-
 import streamlit as st
 from PIL import Image
 from streamlit import session_state as state
@@ -21,7 +20,6 @@ from src.ui.processing import collect_results
 from src.ui.rendering import (render_iter_results, render_network,
                               render_results, render_validation)
 from src.ui.utils import download_link, update_aliases
-from src.ui.component import d3_force_graph
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -375,6 +373,11 @@ def main() -> None:
 
         # render each library's results with a persistent checkbox
         for lib, it in state.iter_enrich.items():
+            # Monkey-patch filtered results
+            it.results = [
+                rec for rec in it.results
+                if len(rec.get("genes", [])) >= state.iter_min_overlap
+            ]
             render_iter_results(it, lib)
             state.setdefault(f"use_{lib}_in_network", False)
             st.checkbox(
