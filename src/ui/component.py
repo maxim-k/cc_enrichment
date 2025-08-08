@@ -23,23 +23,38 @@ def d3_force_graph(json_obj, width=1000, height=800):
       <meta charset="utf-8">
       <style>
         body {{ margin:0; font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; }}
-        #chart {{ width:100%; height:100%; position: relative; }}
-       .download-btn {{
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 400;
-          padding: 0.25rem 0.75rem;
-          border-radius: 0.5rem;
-          min-height: 2.5rem;
+        #chart {{
+            width:98%;
+            height:100%;
+            position: relative;
+        }}
+        .chart-container {{
+          display: flex;
+          justify-content: flex-end; /* push contents to the right */
+          align-items: center;       /* vertically center if there’s height */
+        }}
+
+        /* reset the button, give it the opacity behavior */
+        .icon-button {{
+          background: none;
+          border: none;
+          padding: 4px;      /* tweak as needed around the SVG */
           margin: 0;
-          line-height: 1.6;
-          text-transform: none;
-          width: auto;
+          opacity: 0.5;      /* default half-transparent */
           cursor: pointer;
-          user-select: none;
-          background-color: #fff;
-          border: 1px solid rgba(49, 51, 63, 0.2);
+        }}
+
+        .icon-button:hover,
+        .icon-button:focus {{
+          opacity: 1;        /* fully opaque on hover/focus */
+        }}
+
+        /* optional: ensure SVG fills its container and inherits color */
+        .icon-button svg {{
+          display: block;       /* kills inline-svg descenders */
+          fill: currentColor;   /* svg path will pick up text color */
+          height: 1em;
+          width: 1em;
         }}
 </style>        
       </style>
@@ -47,11 +62,12 @@ def d3_force_graph(json_obj, width=1000, height=800):
       <script src="https://cdn.jsdelivr.net/npm/save-svg-as-png@1.4.17/lib/saveSvgAsPng.js"></script>
     </head>
     <body>
-        <div id="chart"></div>
-        <div id="download-controls">
-            <button id="download-svg" class="download-btn">Download SVG</button>
-            <button id="download-png" class="download-btn">Download PNG</button>
+        <div id="chart-container">
+            <button id="download-png" class="icon-button" aria-label="Download PNG">
+                <svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m500 450c-83 0-150-67-150-150 0-83 67-150 150-150 83 0 150 67 150 150 0 83-67 150-150 150z m400 150h-120c-16 0-34 13-39 29l-31 93c-6 15-23 28-40 28h-340c-16 0-34-13-39-28l-31-94c-6-15-23-28-40-28h-120c-55 0-100-45-100-100v-450c0-55 45-100 100-100h800c55 0 100 45 100 100v450c0 55-45 100-100 100z m-400-550c-138 0-250 112-250 250 0 138 112 250 250 250 138 0 250-112 250-250 0-138-112-250-250-250z m365 380c-19 0-35 16-35 35 0 19 16 35 35 35 19 0 35-16 35-35 0-19-16-35-35-35z" transform="matrix(1 0 0 -1 0 850)"></path></svg>
+            </button>
         </div>
+        <div id="chart"></div>
         <script>
           // helper to trigger download of a Blob
           function triggerDownload(blob, filename) {{
